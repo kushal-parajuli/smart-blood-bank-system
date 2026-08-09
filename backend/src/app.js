@@ -10,8 +10,11 @@ const express = require("express");
 const cors = require("cors");
 
 const healthRoutes = require("./routes/healthRoutes");
+const authRoutes = require("./routes/authRoutes");
 // Future route imports will be added here as modules are built, e.g.:
-// const authRoutes = require("./routes/authRoutes");
+// const donorRoutes = require("./routes/donorRoutes");
+
+const errorHandler = require("./middlewares/errorHandler");
 
 const app = express();
 
@@ -21,8 +24,10 @@ app.use(express.json());
 // Public route — basic server + DB health check
 app.use("/api/health", healthRoutes);
 
+// Auth — register/login are public; /profile is protected internally via middleware
+app.use("/api/auth", authRoutes);
+
 // Future route mounts:
-// app.use("/api/auth", authRoutes);
 // app.use("/api/donors", donorRoutes);
 // app.use("/api/blood-banks", bloodBankRoutes);
 // app.use("/api/requests", requestRoutes);
@@ -35,5 +40,9 @@ app.use("/api/health", healthRoutes);
 app.get("/", (req, res) => {
   res.json({ message: "Smart Blood Bank Management System API is running." });
 });
+
+// Must be registered LAST — after all routes — so it can catch errors
+// forwarded via next(err) from anywhere above it.
+app.use(errorHandler);
 
 module.exports = app;
