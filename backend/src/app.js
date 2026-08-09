@@ -14,8 +14,9 @@ const authRoutes = require("./routes/authRoutes");
 const bloodBankRoutes = require("./routes/bloodBankRoutes");
 const donorRoutes = require("./routes/donorRoutes");
 const inventoryRoutes = require("./routes/inventoryRoutes");
+const requestRoutes = require("./routes/requestRoutes");
 // Future route imports will be added here as modules are built, e.g.:
-// const requestRoutes = require("./routes/requestRoutes");
+// const appointmentRoutes = require("./routes/appointmentRoutes");
 
 const errorHandler = require("./middlewares/errorHandler");
 
@@ -39,8 +40,11 @@ app.use("/api/donors", donorRoutes);
 // Inventory — /search is public; add/update/delete are blood_bank-only
 app.use("/api/inventory", inventoryRoutes);
 
+// Blood requests — all routes protected, split between user-side and bank-side
+app.use("/api/requests", requestRoutes);
+
 // Future route mounts:
-// app.use("/api/requests", requestRoutes);
+// app.use("/api/appointments", appointmentRoutes);
 // app.use("/api/admin", adminRoutes);
 //
 // AI First Aid proxy route intentionally NOT added yet —

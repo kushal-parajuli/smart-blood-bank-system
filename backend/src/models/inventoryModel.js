@@ -41,6 +41,52 @@ async function deleteBatch(id) {
 }
 
 /**
+ * Deducts `unitsNeeded` units of a blood group from a bank's stock using
+ * FEFO — First-Expired-First-Out: batches closest to expiry are used up
+ * before newer ones. This mirrors real blood bank practice (use the stock
+ * that will expire soonest, don't let it go to waste while newer stock
+ * sits untouched) rather than just decrementing an arbitrary batch.
+ *
+ * MUST be called with a transaction connection, not the bare pool —
+ * `FOR UPDATE` locks the selected rows for the duration of the transaction
+ * so two simultaneous requests can't both "see" the same stock as available
+ * and double-allocate it (a real race condition risk once multiple users
+ * can request from the same bank concurrently).
+ *
+ * Throws (with statusCode 409) if the bank's total stock for that group
+ * is less than unitsNeeded — the caller's transaction should then roll
+ * back, leaving inventory untouched.
+ */
+async function deductUnitsFEFO(bloodBankId, bloodGroup, unitsNeeded, conn) {
+  const [batches] = await conn.query(
+    `SELECT id, quantity_units FROM blood_inventory
+     WHERE blood_bank_id = ? AND blood_group = ? AND quantity_units > 0
+     ORDER BY expiry_date ASC
+     FOR UPDATE`,
+    [bloodBankId, bloodGroup]
+  );
+
+  let remaining = unitsNeeded;
+  for (const batch of batches) {
+    if (remaining <= 0) break;
+    const deduct = Math.min(batch.quantity_units, remaining);
+    await conn.query(
+      "UPDATE blood_inventory SET quantity_units = quantity_units - ? WHERE id = ?",
+      [deduct, batch.id]
+    );
+    remaining -= deduct;
+  }
+
+  if (remaining > 0) {
+    const err = new Error(
+      `Insufficient stock: only ${unitsNeeded - remaining} of ${unitsNeeded} requested units available.`
+    );
+    err.statusCode = 409;
+    throw err;
+  }
+}
+
+/**
  * Public search: for a given blood group (and optionally a city filter),
  * finds banks that have that group in stock — aggregated across all of a
  * bank's batches (a bank might have 3 separate O+ batches; the searcher
@@ -85,5 +131,6 @@ module.exports = {
   findBatchesByBankId,
   updateBatchQuantity,
   deleteBatch,
+  deductUnitsFEFO,
   searchAvailability,
 };
