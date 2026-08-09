@@ -9,11 +9,21 @@
 const { pool } = require("../config/db");
 
 /**
+ * Every function below takes an optional `conn` as its last argument,
+ * defaulting to the shared `pool`. This lets a caller pass in a dedicated
+ * transaction connection instead (see bloodBankController for why this
+ * matters: creating a user + a blood_banks row must succeed or fail
+ * together, which only works if both queries run on the SAME connection
+ * inside a single transaction — the pool alone can't guarantee that,
+ * since it may hand out a different connection per query).
+ */
+
+/**
  * Looks up a role's numeric id by its name ('user' | 'blood_bank' | 'admin').
  * Used at registration time to convert a role name into the FK stored on users.
  */
-async function getRoleIdByName(roleName) {
-  const [rows] = await pool.query("SELECT id FROM roles WHERE name = ?", [roleName]);
+async function getRoleIdByName(roleName, conn = pool) {
+  const [rows] = await conn.query("SELECT id FROM roles WHERE name = ?", [roleName]);
   return rows.length ? rows[0].id : null;
 }
 
@@ -22,8 +32,8 @@ async function getRoleIdByName(roleName) {
  * this function never sees or handles plaintext passwords, that's the
  * controller's responsibility (keeps hashing logic in one predictable place).
  */
-async function createUser({ name, email, passwordHash, phone, roleId }) {
-  const [result] = await pool.query(
+async function createUser({ name, email, passwordHash, phone, roleId }, conn = pool) {
+  const [result] = await conn.query(
     `INSERT INTO users (role_id, name, email, password_hash, phone)
      VALUES (?, ?, ?, ?, ?)`,
     [roleId, name, email, passwordHash, phone || null]

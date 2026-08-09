@@ -11,8 +11,11 @@ const cors = require("cors");
 
 const healthRoutes = require("./routes/healthRoutes");
 const authRoutes = require("./routes/authRoutes");
+const bloodBankRoutes = require("./routes/bloodBankRoutes");
+const donorRoutes = require("./routes/donorRoutes");
+const inventoryRoutes = require("./routes/inventoryRoutes");
 // Future route imports will be added here as modules are built, e.g.:
-// const donorRoutes = require("./routes/donorRoutes");
+// const requestRoutes = require("./routes/requestRoutes");
 
 const errorHandler = require("./middlewares/errorHandler");
 
@@ -27,9 +30,16 @@ app.use("/api/health", healthRoutes);
 // Auth — register/login are public; /profile is protected internally via middleware
 app.use("/api/auth", authRoutes);
 
+// Blood banks — /register is public; other routes are protected internally
+app.use("/api/blood-banks", bloodBankRoutes);
+
+// Donors — donor is a profile a logged-in user opts into, not a public signup
+app.use("/api/donors", donorRoutes);
+
+// Inventory — /search is public; add/update/delete are blood_bank-only
+app.use("/api/inventory", inventoryRoutes);
+
 // Future route mounts:
-// app.use("/api/donors", donorRoutes);
-// app.use("/api/blood-banks", bloodBankRoutes);
 // app.use("/api/requests", requestRoutes);
 // app.use("/api/admin", adminRoutes);
 //
