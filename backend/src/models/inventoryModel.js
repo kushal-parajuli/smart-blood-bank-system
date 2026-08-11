@@ -7,8 +7,8 @@
 
 const { pool } = require("../config/db");
 
-async function createBatch({ bloodBankId, bloodGroup, quantityUnits, collectionDate, expiryDate }) {
-  const [result] = await pool.query(
+async function createBatch({ bloodBankId, bloodGroup, quantityUnits, collectionDate, expiryDate }, conn = pool) {
+  const [result] = await conn.query(
     `INSERT INTO blood_inventory (blood_bank_id, blood_group, quantity_units, collection_date, expiry_date)
      VALUES (?, ?, ?, ?, ?)`,
     [bloodBankId, bloodGroup, quantityUnits, collectionDate || null, expiryDate || null]
@@ -87,6 +87,21 @@ async function deductUnitsFEFO(bloodBankId, bloodGroup, unitsNeeded, conn) {
 }
 
 /**
+ * Total units of a single blood group at ONE specific bank — used by the
+ * donor-fallback feature to check "is this bank actually out of stock for
+ * this group" before surfacing donor appointment info as a fallback.
+ */
+async function getBankGroupTotal(bloodBankId, bloodGroup) {
+  const [rows] = await pool.query(
+    `SELECT COALESCE(SUM(quantity_units), 0) AS total
+     FROM blood_inventory
+     WHERE blood_bank_id = ? AND blood_group = ?`,
+    [bloodBankId, bloodGroup]
+  );
+  return rows[0].total;
+}
+
+/**
  * Public search: for a given blood group (and optionally a city filter),
  * finds banks that have that group in stock — aggregated across all of a
  * bank's batches (a bank might have 3 separate O+ batches; the searcher
@@ -132,5 +147,6 @@ module.exports = {
   updateBatchQuantity,
   deleteBatch,
   deductUnitsFEFO,
+  getBankGroupTotal,
   searchAvailability,
 };
