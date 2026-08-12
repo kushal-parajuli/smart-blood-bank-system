@@ -5,6 +5,9 @@
 // should ever be mounted without that check.
 
 const adminModel = require("../models/adminModel");
+const bloodBankModel = require("../models/bloodBankModel");
+const donorModel = require("../models/donorModel");
+const notificationModel = require("../models/notificationModel");
 
 async function getUnverifiedBloodBanks(req, res) {
   const banks = await adminModel.getUnverifiedBloodBanks();
@@ -17,6 +20,16 @@ async function verifyBloodBank(req, res) {
   if (!updated) {
     return res.status(404).json({ success: false, message: "Blood bank not found." });
   }
+
+  const bank = await bloodBankModel.findBloodBankById(id);
+  if (bank) {
+    await notificationModel.createNotification({
+      userId: bank.user_id,
+      type: "system",
+      message: `Your blood bank "${bank.bank_name}" has been verified by an administrator.`,
+    });
+  }
+
   res.status(200).json({ success: true, message: "Blood bank verified.", bloodBankId: Number(id) });
 }
 
@@ -31,6 +44,16 @@ async function verifyDonor(req, res) {
   if (!updated) {
     return res.status(404).json({ success: false, message: "Donor not found." });
   }
+
+  const donor = await donorModel.findDonorWithUserById(id);
+  if (donor) {
+    await notificationModel.createNotification({
+      userId: donor.user_id,
+      type: "system",
+      message: "Your donor profile has been verified by an administrator.",
+    });
+  }
+
   res.status(200).json({ success: true, message: "Donor verified.", donorId: Number(id) });
 }
 

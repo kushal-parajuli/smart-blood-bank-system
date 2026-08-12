@@ -4,6 +4,7 @@ const { pool } = require("../config/db");
 const requestModel = require("../models/requestModel");
 const bloodBankModel = require("../models/bloodBankModel");
 const inventoryModel = require("../models/inventoryModel");
+const notificationModel = require("../models/notificationModel");
 const { VALID_BLOOD_GROUPS } = require("../utils/constants");
 
 const VALID_URGENCY = ["normal", "urgent", "emergency"];
@@ -208,6 +209,16 @@ async function updateRequestStatus(req, res) {
     // accepted / rejected — simple status change, no inventory involved.
     await requestModel.updateStatus(id, status);
   }
+
+  // Notify the requester of the outcome. Deliberately OUTSIDE the
+  // transaction above — a notification failing to insert should never
+  // roll back a real stock deduction that already succeeded. This is a
+  // best-effort side effect, not part of the core guarantee.
+  await notificationModel.createNotification({
+    userId: request.requester_id,
+    type: "request_status",
+    message: `Your blood request for ${request.units_needed} unit(s) of ${request.blood_group} at ${bank.bank_name} was ${status}.`,
+  });
 
   res.status(200).json({ success: true, message: `Request marked as ${status}.`, requestId: Number(id), status });
 }
