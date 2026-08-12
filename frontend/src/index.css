@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+/*
+  Design tokens go here once we start building real pages — this file
+  is intentionally minimal for now (just the Tailwind import) since
+  scaffolding shouldn't lock in visual decisions before we've actually
+  designed anything. When we build the homepage, we'll define a proper
+  color/type system here rather than relying on Tailwind's raw defaults.
+*/
