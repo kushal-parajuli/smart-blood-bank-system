@@ -16,8 +16,7 @@ const donorRoutes = require("./routes/donorRoutes");
 const inventoryRoutes = require("./routes/inventoryRoutes");
 const requestRoutes = require("./routes/requestRoutes");
 const appointmentRoutes = require("./routes/appointmentRoutes");
-// Future route imports will be added here as modules are built, e.g.:
-// const adminRoutes = require("./routes/adminRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 
 const errorHandler = require("./middlewares/errorHandler");
 
@@ -47,9 +46,9 @@ app.use("/api/requests", requestRoutes);
 // Donor appointments — booking, bank confirmation, and the donor-fallback/nudge feature
 app.use("/api/appointments", appointmentRoutes);
 
-// Future route mounts:
-// app.use("/api/admin", adminRoutes);
-//
+// Admin — every route here requires role: admin (enforced once, at router level)
+app.use("/api/admin", adminRoutes);
+
 // AI First Aid proxy route intentionally NOT added yet —
 // AI integration is the last phase per project plan.
 // app.use("/api/ai", aiRoutes);
