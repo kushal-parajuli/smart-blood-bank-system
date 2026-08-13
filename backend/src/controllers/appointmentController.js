@@ -6,7 +6,7 @@ const donorModel = require("../models/donorModel");
 const bloodBankModel = require("../models/bloodBankModel");
 const inventoryModel = require("../models/inventoryModel");
 const emailService = require("../services/emailService");
-const { VALID_BLOOD_GROUPS } = require("../utils/constants");
+const { VALID_BLOOD_GROUPS, MINIMUM_DONATION_WEIGHT_KG } = require("../utils/constants");
 
 // Whole blood is typically usable for ~42 days after collection — used to
 // auto-set an expiry date on the inventory batch created from a completed
@@ -26,7 +26,10 @@ function addDays(date, days) {
  * issues a unique token number.
  */
 async function bookAppointment(req, res) {
-  const { bloodBankId, appointmentTime } = req.body;
+  const {
+    bloodBankId, appointmentTime,
+    weightKg, heightCm, hasChronicIllness, illnessDetails,
+  } = req.body;
 
   if (!bloodBankId || !appointmentTime) {
     return res.status(400).json({
@@ -43,6 +46,27 @@ async function bookAppointment(req, res) {
     return res.status(400).json({ success: false, message: "appointmentTime must be in the future." });
   }
 
+  // Screening fields are required — collected fresh at every booking,
+  // since weight and health status can change between donations.
+  if (weightKg == null || heightCm == null) {
+    return res.status(400).json({
+      success: false,
+      message: "weightKg and heightCm are required to book a donation.",
+    });
+  }
+  if (weightKg <= 0 || weightKg > 300) {
+    return res.status(400).json({ success: false, message: "Please enter a valid weight in kg." });
+  }
+  if (heightCm <= 0 || heightCm > 250) {
+    return res.status(400).json({ success: false, message: "Please enter a valid height in cm." });
+  }
+  if (hasChronicIllness && !illnessDetails) {
+    return res.status(400).json({
+      success: false,
+      message: "Please briefly describe the condition if you indicated a chronic illness.",
+    });
+  }
+
   const donor = await donorModel.findDonorByUserId(req.user.id);
   if (!donor) {
     return res.status(403).json({
@@ -56,18 +80,38 @@ async function bookAppointment(req, res) {
     return res.status(404).json({ success: false, message: "Blood bank not found." });
   }
 
+  // Soft, informational only — never blocks booking. The blood bank's
+  // own screening at the appointment is the real medical gate, not this
+  // system. We just surface it so the bank sees it on their side too.
+  const meetsWeightGuideline = weightKg >= MINIMUM_DONATION_WEIGHT_KG;
+
   const tokenNumber = appointmentModel.generateTokenNumber();
   const appointmentId = await appointmentModel.createAppointment({
     donorId: donor.id,
     bloodBankId,
     appointmentTime,
     tokenNumber,
+    weightKg,
+    heightCm,
+    hasChronicIllness: !!hasChronicIllness,
+    illnessDetails,
+    meetsWeightGuideline,
   });
 
   res.status(201).json({
     success: true,
     message: "Appointment booked successfully.",
-    appointment: { id: appointmentId, tokenNumber, bloodBankId, appointmentTime, status: "pending" },
+    appointment: {
+      id: appointmentId,
+      tokenNumber,
+      bloodBankId,
+      appointmentTime,
+      status: "pending",
+      meetsWeightGuideline,
+      ...(!meetsWeightGuideline && {
+        note: `Your recorded weight is below the typical ${MINIMUM_DONATION_WEIGHT_KG}kg guideline for whole-blood donation. The blood bank's medical staff will confirm your eligibility at the appointment — this is not a rejection.`,
+      }),
+    },
   });
 }
 

@@ -18,6 +18,7 @@ const requestRoutes = require("./routes/requestRoutes");
 const appointmentRoutes = require("./routes/appointmentRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const donationRoutes = require("./routes/donationRoutes");
 
 const errorHandler = require("./middlewares/errorHandler");
 
@@ -52,6 +53,9 @@ app.use("/api/admin", adminRoutes);
 
 // Notifications — any logged-in role can view/manage their own
 app.use("/api/notifications", notificationRoutes);
+
+// Donation history — donor's own record + eligibility guideline
+app.use("/api/donations", donationRoutes);
 
 // AI First Aid proxy route intentionally NOT added yet —
 // AI integration is the last phase per project plan.

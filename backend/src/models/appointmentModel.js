@@ -23,11 +23,23 @@ function generateTokenNumber() {
   return `DON-${datePart}-${randomPart}`;
 }
 
-async function createAppointment({ donorId, bloodBankId, appointmentTime, tokenNumber }) {
+async function createAppointment({
+  donorId, bloodBankId, appointmentTime, tokenNumber,
+  weightKg, heightCm, hasChronicIllness, illnessDetails, meetsWeightGuideline,
+}) {
   const [result] = await pool.query(
-    `INSERT INTO donor_appointments (donor_id, blood_bank_id, token_number, appointment_time)
-     VALUES (?, ?, ?, ?)`,
-    [donorId, bloodBankId, tokenNumber, appointmentTime]
+    `INSERT INTO donor_appointments
+       (donor_id, blood_bank_id, token_number, appointment_time,
+        weight_kg, height_cm, has_chronic_illness, illness_details, meets_weight_guideline)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      donorId, bloodBankId, tokenNumber, appointmentTime,
+      weightKg ?? null,
+      heightCm ?? null,
+      hasChronicIllness ?? false,
+      illnessDetails || null,
+      meetsWeightGuideline ?? true,
+    ]
   );
   return result.insertId;
 }

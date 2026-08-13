@@ -1,9 +1,47 @@
 @import "tailwindcss";
 
-/*
-  Design tokens go here once we start building real pages — this file
-  is intentionally minimal for now (just the Tailwind import) since
-  scaffolding shouldn't lock in visual decisions before we've actually
-  designed anything. When we build the homepage, we'll define a proper
-  color/type system here rather than relying on Tailwind's raw defaults.
-*/
+@theme {
+  --color-paper: #f6f9f8;
+  --color-ink: #0f2a26;
+  --color-brand: #0e7c6b;
+  --color-brand-dark: #0b6357;
+  --color-brand-light: #e3f2ef;
+  --color-urgent: #e15241;
+  --color-urgent-dark: #c43f30;
+  --color-slate: #5b6d6a;
+  --color-mist: #e7efed;
+
+  --font-display: "Manrope", ui-sans-serif, sans-serif;
+  --font-body: "Inter", ui-sans-serif, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+  }
+}
+
+/* Signature motif: a pulse line drawing itself in once on load.
+   Respects reduced-motion — the line simply appears fully drawn instead. */
+@keyframes draw-pulse {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.pulse-draw {
+  stroke-dasharray: 600;
+  stroke-dashoffset: 600;
+  animation: draw-pulse 1.6s ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pulse-draw {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
