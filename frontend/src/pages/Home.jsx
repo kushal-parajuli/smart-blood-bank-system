@@ -16,7 +16,7 @@ const services = [
     description:
       "Set up your donor profile once, then book a donation appointment at a bank near you whenever you're ready to give.",
     action: "Donate blood",
-    to: "/register",
+    to: "/donor/register",
   },
   {
     title: "Request blood",
@@ -56,7 +56,7 @@ export default function Home() {
                 Search blood availability
               </Link>
               <Link
-                to="/register"
+                to="/donor/register"
                 className="w-full rounded-full border border-[var(--color-brand)] px-6 py-3 text-center text-sm font-semibold text-[var(--color-brand)] transition hover:bg-[var(--color-brand-light)] sm:w-auto"
               >
                 Donate blood

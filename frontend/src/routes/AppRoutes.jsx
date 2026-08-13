@@ -6,9 +6,11 @@
 
 import { Routes, Route } from "react-router-dom";
 import Layout from "../components/layout/Layout";
+import ProtectedRoute from "../components/common/ProtectedRoute";
 import Home from "../pages/Home";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
+import DonorRegister from "../pages/DonorRegister";
 
 export default function AppRoutes() {
   return (
@@ -17,7 +19,15 @@ export default function AppRoutes() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        {/* Future routes: role dashboards, search, requests, etc. */}
+        <Route
+          path="/donor/register"
+          element={
+            <ProtectedRoute>
+              <DonorRegister />
+            </ProtectedRoute>
+          }
+        />
+        {/* Future routes: booking, search, requests, dashboards */}
       </Routes>
     </Layout>
   );
