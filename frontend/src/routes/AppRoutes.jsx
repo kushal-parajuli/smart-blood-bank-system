@@ -11,6 +11,10 @@ import Home from "../pages/Home";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
 import DonorRegister from "../pages/DonorRegister";
+import SearchBlood from "../pages/SearchBlood";
+import RequestBlood from "../pages/RequestBlood";
+import BloodBankRegister from "../pages/BloodBankRegister";
+import BankDashboard from "../pages/bloodbank/BankDashboard";
 
 export default function AppRoutes() {
   return (
@@ -19,6 +23,16 @@ export default function AppRoutes() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/register/blood-bank" element={<BloodBankRegister />} />
+        <Route path="/search" element={<SearchBlood />} />
+        <Route
+          path="/bank/dashboard"
+          element={
+            <ProtectedRoute roles={["blood_bank"]}>
+              <BankDashboard />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/donor/register"
           element={
@@ -27,7 +41,15 @@ export default function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        {/* Future routes: booking, search, requests, dashboards */}
+        <Route
+          path="/request"
+          element={
+            <ProtectedRoute>
+              <RequestBlood />
+            </ProtectedRoute>
+          }
+        />
+        {/* Future routes: booking, dashboards */}
       </Routes>
     </Layout>
   );

@@ -19,11 +19,11 @@ export default function Login() {
   async function onSubmit(formData) {
     setServerError("");
     try {
-      await login(formData);
-      // Every role lands on the homepage for now — role-specific
-      // dashboards get their own routes once we build them, at which
-      // point this redirect logic will branch by user.role.
-      navigate("/");
+      const loggedInUser = await login(formData);
+      // Blood banks land on their dashboard; every other role goes home
+      // for now — user/admin dashboards will get their own branches
+      // here once built.
+      navigate(loggedInUser.role === "blood_bank" ? "/bank/dashboard" : "/");
     } catch (err) {
       setServerError(
         err.response?.data?.message || "Something went wrong. Please try again."

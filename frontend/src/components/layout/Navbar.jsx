@@ -36,6 +36,14 @@ export default function Navbar() {
 
         {user ? (
           <div className="flex items-center gap-4">
+            {user.role === "blood_bank" && (
+              <Link
+                to="/bank/dashboard"
+                className="text-sm font-medium text-[var(--color-ink)] hover:text-[var(--color-brand)]"
+              >
+                Dashboard
+              </Link>
+            )}
             <span className="text-sm text-[var(--color-slate)]">
               Hi, <span className="font-semibold text-[var(--color-ink)]">{user.name?.split(" ")[0]}</span>
             </span>

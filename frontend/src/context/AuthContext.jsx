@@ -6,6 +6,7 @@
 
 import { createContext, useContext, useState, useEffect } from "react";
 import { registerUser, loginUser } from "../services/authService";
+import { registerBloodBank as registerBloodBankApi } from "../services/bloodBankService";
 
 const AuthContext = createContext(null);
 
@@ -42,6 +43,12 @@ export function AuthProvider({ children }) {
     return data.user;
   }
 
+  async function registerBloodBank(formData) {
+    const data = await registerBloodBankApi(formData);
+    persistSession(data);
+    return data.user;
+  }
+
   function logout() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -49,7 +56,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, registerBloodBank, logout }}>
       {children}
     </AuthContext.Provider>
   );

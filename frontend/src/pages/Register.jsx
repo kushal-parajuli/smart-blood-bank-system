@@ -160,6 +160,12 @@ export default function Register() {
             Log in
           </Link>
         </p>
+        <p className="mt-2 text-center text-sm text-[var(--color-slate)]">
+          Registering a blood bank?{" "}
+          <Link to="/register/blood-bank" className="font-semibold text-[var(--color-brand)]">
+            Register here
+          </Link>
+        </p>
       </div>
     </section>
   );

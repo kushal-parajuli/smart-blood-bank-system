@@ -23,7 +23,7 @@ const services = [
     description:
       "Submit a request for yourself or someone else — mark it urgent if it's an emergency.",
     action: "Request blood",
-    to: "/register",
+    to: "/request",
   },
 ];
 
