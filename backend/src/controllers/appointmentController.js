@@ -5,8 +5,16 @@ const appointmentModel = require("../models/appointmentModel");
 const donorModel = require("../models/donorModel");
 const bloodBankModel = require("../models/bloodBankModel");
 const inventoryModel = require("../models/inventoryModel");
+const donationModel = require("../models/donationModel");
 const emailService = require("../services/emailService");
-const { VALID_BLOOD_GROUPS, MINIMUM_DONATION_WEIGHT_KG } = require("../utils/constants");
+const {
+  VALID_BLOOD_GROUPS,
+  MINIMUM_DONATION_WEIGHT_KG,
+  BOOKING_START_HOUR,
+  BOOKING_END_HOUR,
+  isValidBookingSlot,
+} = require("../utils/constants");
+const { computeEligibility } = require("../utils/eligibility");
 
 // Whole blood is typically usable for ~42 days after collection — used to
 // auto-set an expiry date on the inventory batch created from a completed
@@ -45,6 +53,12 @@ async function bookAppointment(req, res) {
   if (appointmentDate <= new Date()) {
     return res.status(400).json({ success: false, message: "appointmentTime must be in the future." });
   }
+  if (!isValidBookingSlot(appointmentDate)) {
+    return res.status(400).json({
+      success: false,
+      message: `Appointments can only be booked between ${BOOKING_START_HOUR}:00 and ${BOOKING_END_HOUR}:00, on 15-minute slots (e.g. 10:00, 10:15, 10:30…).`,
+    });
+  }
 
   // Screening fields are required — collected fresh at every booking,
   // since weight and health status can change between donations.
@@ -72,6 +86,34 @@ async function bookAppointment(req, res) {
     return res.status(403).json({
       success: false,
       message: "You must have a donor profile to book a donation appointment. Register as a donor first.",
+    });
+  }
+
+  // Block a SECOND pending appointment — only 'pending' blocks; a
+  // cancelled, missed, or completed appointment never does, so the
+  // donor is free to book again once their outstanding one resolves.
+  const existingPending = await appointmentModel.findPendingAppointmentByDonor(donor.id);
+  if (existingPending) {
+    const when = new Date(existingPending.appointment_time).toLocaleString("en-US", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+    return res.status(409).json({
+      success: false,
+      message: `You already have a pending appointment on ${when} at ${existingPending.bank_name}. You can book a new one once that appointment is completed, cancelled, or marked as missed.`,
+    });
+  }
+
+  // Enforce the recovery interval since the donor's last COMPLETED
+  // donation — blood donation genuinely cannot happen every day, this
+  // is a real gate, not just the informational note shown on the
+  // donation-history page (which uses this same calculation).
+  const pastDonations = await donationModel.findDonationsByDonorId(donor.id);
+  const eligibility = computeEligibility(pastDonations);
+  if (!eligibility.isEligibleNow) {
+    return res.status(409).json({
+      success: false,
+      message: `You're not yet eligible to donate again. Based on your last donation, you can book your next appointment starting ${eligibility.nextEligibleDate}.`,
     });
   }
 

@@ -10,6 +10,8 @@ const asyncHandler = require("../utils/asyncHandler");
 
 router.post("/register", asyncHandler(bloodBankController.register));
 
+router.get("/", asyncHandler(bloodBankController.listBanks));
+
 router.get(
   "/me",
   protect,

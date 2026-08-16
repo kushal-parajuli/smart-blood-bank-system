@@ -11,3 +11,8 @@ export async function fetchMyBloodBankProfile() {
   const res = await api.get("/blood-banks/me");
   return res.data;
 }
+
+export async function listBloodBanks() {
+  const res = await api.get("/blood-banks");
+  return res.data;
+}

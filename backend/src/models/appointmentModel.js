@@ -162,6 +162,24 @@ async function recordDonation({ donorId, bloodBankId, bloodGroup, unitsDonated, 
   return result.insertId;
 }
 
+/**
+ * Finds the donor's current pending appointment, if any — used to block
+ * booking a second one while one is already outstanding. Only 'pending'
+ * counts; completed/missed/cancelled appointments never block a new booking.
+ */
+async function findPendingAppointmentByDonor(donorId) {
+  const [rows] = await pool.query(
+    `SELECT da.id, da.appointment_time, bb.bank_name
+     FROM donor_appointments da
+     JOIN blood_banks bb ON da.blood_bank_id = bb.id
+     WHERE da.donor_id = ? AND da.status = 'pending'
+     ORDER BY da.appointment_time ASC
+     LIMIT 1`,
+    [donorId]
+  );
+  return rows[0] || null;
+}
+
 module.exports = {
   generateTokenNumber,
   createAppointment,
@@ -174,4 +192,5 @@ module.exports = {
   hasNudged,
   createNudge,
   findAppointmentWithDonorEmail,
+  findPendingAppointmentByDonor,
 };

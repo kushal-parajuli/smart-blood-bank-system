@@ -15,6 +15,7 @@ import SearchBlood from "../pages/SearchBlood";
 import RequestBlood from "../pages/RequestBlood";
 import BloodBankRegister from "../pages/BloodBankRegister";
 import BankDashboard from "../pages/bloodbank/BankDashboard";
+import BookAppointment from "../pages/BookAppointment";
 
 export default function AppRoutes() {
   return (
@@ -49,7 +50,15 @@ export default function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        {/* Future routes: booking, dashboards */}
+        <Route
+          path="/donate"
+          element={
+            <ProtectedRoute>
+              <BookAppointment />
+            </ProtectedRoute>
+          }
+        />
+        {/* Future routes: user/admin dashboards */}
       </Routes>
     </Layout>
   );

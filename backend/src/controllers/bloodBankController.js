@@ -5,6 +5,7 @@ const { pool } = require("../config/db");
 const userModel = require("../models/userModel");
 const bloodBankModel = require("../models/bloodBankModel");
 const generateJWT = require("../utils/generateJWT");
+const { isValidPassword, PASSWORD_REQUIREMENTS_MESSAGE } = require("../utils/validators");
 
 const SALT_ROUNDS = 10;
 
@@ -40,10 +41,10 @@ async function register(req, res) {
     });
   }
 
-  if (password.length < 6) {
+  if (!isValidPassword(password)) {
     return res.status(400).json({
       success: false,
-      message: "Password must be at least 6 characters long.",
+      message: PASSWORD_REQUIREMENTS_MESSAGE,
     });
   }
 
@@ -114,4 +115,14 @@ async function getMyProfile(req, res) {
   res.status(200).json({ success: true, bloodBank });
 }
 
-module.exports = { register, getMyProfile };
+/**
+ * GET /api/blood-banks
+ * PUBLIC. Plain list of all banks — used by the donor booking flow to
+ * pick a bank to donate at.
+ */
+async function listBanks(req, res) {
+  const banks = await bloodBankModel.findAllBanks();
+  res.status(200).json({ success: true, banks });
+}
+
+module.exports = { register, getMyProfile, listBanks };

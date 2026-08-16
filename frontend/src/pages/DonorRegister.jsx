@@ -89,14 +89,19 @@ export default function DonorRegister() {
           {existingProfile?.city && <> · based in {existingProfile.city}</>}
         </p>
         <p className="mt-2 text-sm text-[var(--color-slate)]">
-          Booking your next donation appointment is coming very soon.
+          Ready to donate? Book your appointment whenever suits you.
         </p>
         <Link
-          to="/"
+          to="/donate"
           className="mt-6 inline-block rounded-full bg-[var(--color-brand)] px-6 py-2.5 text-sm font-semibold text-white"
         >
-          Back to home
+          Book a donation
         </Link>
+        <div>
+          <Link to="/" className="mt-3 inline-block text-sm text-[var(--color-slate)] underline">
+            Back to home
+          </Link>
+        </div>
       </section>
     );
   }
@@ -108,15 +113,19 @@ export default function DonorRegister() {
           You're registered as a donor
         </h1>
         <p className="mt-3 text-sm leading-relaxed text-[var(--color-slate)]">
-          Thank you. Booking your first donation appointment is coming very
-          soon — we'll let you know the moment it's ready.
+          Thank you. You can book your first donation appointment right away.
         </p>
         <Link
-          to="/"
+          to="/donate"
           className="mt-6 inline-block rounded-full bg-[var(--color-brand)] px-6 py-2.5 text-sm font-semibold text-white"
         >
-          Back to home
+          Book a donation
         </Link>
+        <div>
+          <Link to="/" className="mt-3 inline-block text-sm text-[var(--color-slate)] underline">
+            Back to home
+          </Link>
+        </div>
       </section>
     );
   }

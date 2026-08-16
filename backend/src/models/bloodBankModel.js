@@ -80,9 +80,26 @@ async function findBloodBankByUserId(userId, conn = pool) {
   return rows[0] || null;
 }
 
+/**
+ * Lists every registered bank — used for the donor booking flow, where
+ * someone needs to pick ANY bank to donate at (not filtered by stock,
+ * unlike inventory search which requires a blood group). Unverified
+ * banks are still included but flagged, so the frontend can show that
+ * status rather than silently hiding them.
+ */
+async function findAllBanks(conn = pool) {
+  const [rows] = await conn.query(
+    `SELECT id, bank_name, city, district, province, latitude, longitude, is_verified_by_admin
+     FROM blood_banks
+     ORDER BY bank_name`
+  );
+  return rows;
+}
+
 module.exports = {
   findByLicenseNumber,
   createBloodBank,
   findBloodBankById,
   findBloodBankByUserId,
+  findAllBanks,
 };
