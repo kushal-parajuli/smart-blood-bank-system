@@ -16,6 +16,30 @@
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 }
 
+/* shadcn/ui expects these exact variable names — bridging them to our
+   existing palette above means every shadcn component (Button, Card,
+   Badge, etc.) automatically uses our brand colors, not shadcn's
+   default gray/zinc theme. This is the ONLY place these two systems
+   need to be connected. */
+:root {
+  --background: var(--color-paper);
+  --foreground: var(--color-ink);
+  --primary: var(--color-brand);
+  --primary-foreground: #ffffff;
+  --secondary: var(--color-brand-light);
+  --secondary-foreground: var(--color-brand-dark);
+  --muted: var(--color-mist);
+  --muted-foreground: var(--color-slate);
+  --accent: var(--color-brand-light);
+  --accent-foreground: var(--color-brand-dark);
+  --destructive: var(--color-urgent);
+  --destructive-foreground: #ffffff;
+  --border: var(--color-mist);
+  --input: var(--color-mist);
+  --ring: var(--color-brand);
+  --radius: 0.75rem;
+}
+
 @layer base {
   body {
     background-color: var(--color-paper);
@@ -43,5 +67,21 @@
   .pulse-draw {
     animation: none;
     stroke-dashoffset: 0;
+  }
+}
+
+/* Aceternity-style ambient background: a slow-drifting spotlight glow
+   plus a faint grid, used only in the hero. Kept subtle and slow on
+   purpose — this is decoration, not the focal point. */
+@keyframes spotlight-drift {
+  0%, 100% { transform: translate(-10%, -5%) scale(1); }
+  50% { transform: translate(10%, 5%) scale(1.15); }
+}
+.spotlight-glow {
+  animation: spotlight-drift 18s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .spotlight-glow {
+    animation: none;
   }
 }

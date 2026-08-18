@@ -16,6 +16,7 @@ import RequestBlood from "../pages/RequestBlood";
 import BloodBankRegister from "../pages/BloodBankRegister";
 import BankDashboard from "../pages/bloodbank/BankDashboard";
 import BookAppointment from "../pages/BookAppointment";
+import UserDashboard from "../pages/user/UserDashboard";
 
 export default function AppRoutes() {
   return (
@@ -58,7 +59,15 @@ export default function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        {/* Future routes: user/admin dashboards */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute roles={["user"]}>
+              <UserDashboard />
+            </ProtectedRoute>
+          }
+        />
+        {/* Future routes: admin dashboard */}
       </Routes>
     </Layout>
   );

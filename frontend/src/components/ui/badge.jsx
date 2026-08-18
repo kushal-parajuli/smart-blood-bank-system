@@ -1,0 +1,25 @@
+// src/components/ui/badge.jsx
+
+import { cva } from "class-variance-authority";
+import { cn } from "../../lib/utils";
+
+const badgeVariants = cva(
+  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors",
+  {
+    variants: {
+      variant: {
+        default: "border-transparent bg-[var(--secondary)] text-[var(--secondary-foreground)]",
+        destructive: "border-transparent bg-[var(--destructive)]/10 text-[var(--destructive)]",
+        outline: "border-[var(--border)] text-[var(--foreground)]",
+        solid: "border-transparent bg-[var(--primary)] text-white",
+      },
+    },
+    defaultVariants: { variant: "default" },
+  }
+);
+
+function Badge({ className, variant, ...props }) {
+  return <div className={cn(badgeVariants({ variant }), className)} {...props} />;
+}
+
+export { Badge, badgeVariants };

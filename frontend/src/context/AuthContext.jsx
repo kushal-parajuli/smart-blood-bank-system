@@ -5,7 +5,7 @@
 // login/logout — nobody reaches into localStorage directly except this file.
 
 import { createContext, useContext, useState, useEffect } from "react";
-import { registerUser, loginUser } from "../services/authService";
+import { registerUser, loginUser, updateProfile as updateProfileApi } from "../services/authService";
 import { registerBloodBank as registerBloodBankApi } from "../services/bloodBankService";
 
 const AuthContext = createContext(null);
@@ -55,8 +55,19 @@ export function AuthProvider({ children }) {
     setUser(null);
   }
 
+  async function updateProfile(data) {
+    const result = await updateProfileApi(data);
+    // Merge rather than replace — the update response includes fields
+    // like created_at/role that the login response's slim `user` object
+    // doesn't, but we still want to keep whatever's already there.
+    const merged = { ...user, ...result.user };
+    localStorage.setItem("user", JSON.stringify(merged));
+    setUser(merged);
+    return merged;
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, registerBloodBank, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, registerBloodBank, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

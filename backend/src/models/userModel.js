@@ -75,9 +75,22 @@ async function findUserById(id) {
   return rows[0] || null;
 }
 
+/**
+ * Updates a user's editable profile fields. Deliberately narrow —
+ * email/password/role are never touched here (those need their own
+ * dedicated, more carefully-guarded flows, not a generic profile edit).
+ */
+async function updateUser(id, { name, phone }) {
+  await pool.query(
+    "UPDATE users SET name = ?, phone = ? WHERE id = ?",
+    [name, phone || null, id]
+  );
+}
+
 module.exports = {
   getRoleIdByName,
   createUser,
   findUserByEmail,
   findUserById,
+  updateUser,
 };

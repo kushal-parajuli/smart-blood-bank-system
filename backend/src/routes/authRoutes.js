@@ -14,5 +14,6 @@ const asyncHandler = require("../utils/asyncHandler");
 router.post("/register", asyncHandler(authController.register));
 router.post("/login", asyncHandler(authController.login));
 router.get("/profile", protect, asyncHandler(authController.getProfile));
+router.put("/profile", protect, asyncHandler(authController.updateProfile));
 
 module.exports = router;

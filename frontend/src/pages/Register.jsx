@@ -1,19 +1,16 @@
 // src/pages/Register.jsx
-//
-// This form only ever creates a normal user account — matching the
-// backend's /api/auth/register, which is deliberately restricted to
-// role: user (see authController.js). Blood bank registration needs its
-// own separate page later (extra fields: license number, address, etc.),
-// hitting a different endpoint (/api/blood-banks/register).
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Droplet, ArrowRight } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Alert } from "../components/ui/alert";
 
-// Mirrors the backend's policy exactly (see backend/src/utils/validators.js) —
-// kept in sync deliberately so the form's error message and the server's
-// error message never contradict each other.
 const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 
 export default function Register() {
@@ -21,152 +18,94 @@ export default function Register() {
   const navigate = useNavigate();
   const [serverError, setServerError] = useState("");
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    formState: { errors, isSubmitting },
-  } = useForm();
-
+  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm();
   const password = watch("password");
 
   async function onSubmit(formData) {
     setServerError("");
     try {
-      // confirmPassword is a frontend-only check — never sent to the backend,
-      // which has no use for it (it only ever stores the one password).
       const { confirmPassword, ...payload } = formData;
       await registerUser(payload);
       navigate("/");
     } catch (err) {
-      setServerError(
-        err.response?.data?.message || "Something went wrong. Please try again."
-      );
+      setServerError(err.response?.data?.message || "Something went wrong. Please try again.");
     }
   }
 
   return (
-    <section className="mx-auto flex min-h-[70vh] max-w-md items-center px-5 py-16">
-      <div className="w-full">
-        <h1 className="font-[var(--font-display)] text-2xl font-bold text-[var(--color-ink)]">
-          Create your account
-        </h1>
-        <p className="mt-1 text-sm text-[var(--color-slate)]">
-          Search blood availability, register as a donor, or request blood in an emergency.
-        </p>
+    <section className="flex min-h-[calc(100vh-73px)] items-center justify-center px-5 py-16">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="w-full max-w-sm"
+      >
+        <div className="mb-8 flex flex-col items-center text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--secondary)]">
+            <Droplet size={22} className="fill-[var(--primary)] text-[var(--primary)]" />
+          </div>
+          <h1 className="mt-4 font-[var(--font-display)] text-2xl font-bold text-[var(--foreground)]">Create your account</h1>
+          <p className="mt-1 text-sm text-[var(--muted-foreground)]">Search, donate, or request blood.</p>
+        </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-5">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-[var(--color-ink)]">
-              Full name
-            </label>
-            <input
-              {...register("name", { required: "Name is required." })}
-              className="w-full rounded-lg border border-[var(--color-mist)] px-4 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
-              placeholder="Your name"
-            />
-            {errors.name && (
-              <p className="mt-1 text-xs text-[var(--color-urgent)]">{errors.name.message}</p>
-            )}
+            <Label htmlFor="name">Full name</Label>
+            <Input id="name" placeholder="Your name" {...register("name", { required: "Name is required." })} />
+            {errors.name && <p className="mt-1 text-xs text-[var(--destructive)]">{errors.name.message}</p>}
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-[var(--color-ink)]">
-              Email
-            </label>
-            <input
-              type="email"
-              {...register("email", { required: "Email is required." })}
-              className="w-full rounded-lg border border-[var(--color-mist)] px-4 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
-              placeholder="you@example.com"
-            />
-            {errors.email && (
-              <p className="mt-1 text-xs text-[var(--color-urgent)]">{errors.email.message}</p>
-            )}
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" type="email" placeholder="you@example.com" {...register("email", { required: "Email is required." })} />
+            {errors.email && <p className="mt-1 text-xs text-[var(--destructive)]">{errors.email.message}</p>}
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-[var(--color-ink)]">
-              Phone <span className="text-[var(--color-slate)] font-normal">(optional)</span>
-            </label>
-            <input
-              {...register("phone")}
-              className="w-full rounded-lg border border-[var(--color-mist)] px-4 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
-              placeholder="98XXXXXXXX"
-            />
+            <Label htmlFor="phone">Phone <span className="font-normal text-[var(--muted-foreground)]">(optional)</span></Label>
+            <Input id="phone" placeholder="98XXXXXXXX" {...register("phone")} />
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-[var(--color-ink)]">
-              Password
-            </label>
-            <input
-              type="password"
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password" type="password" placeholder="e.g. Blood@2026"
               {...register("password", {
                 required: "Password is required.",
-                pattern: {
-                  value: PASSWORD_PATTERN,
-                  message:
-                    "Must be at least 8 characters, with an uppercase letter, a lowercase letter, a number, and a special character.",
-                },
+                pattern: { value: PASSWORD_PATTERN, message: "8+ characters, upper/lowercase, a number, and a symbol." },
               })}
-              className="w-full rounded-lg border border-[var(--color-mist)] px-4 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
-              placeholder="e.g. Blood@2026"
             />
-            <p className="mt-1 text-xs text-[var(--color-slate)]">
-              At least 8 characters, with uppercase, lowercase, a number, and a special character.
-            </p>
-            {errors.password && (
-              <p className="mt-1 text-xs text-[var(--color-urgent)]">{errors.password.message}</p>
-            )}
+            <p className="mt-1 text-xs text-[var(--muted-foreground)]">8+ characters, uppercase, lowercase, number, symbol.</p>
+            {errors.password && <p className="mt-1 text-xs text-[var(--destructive)]">{errors.password.message}</p>}
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-[var(--color-ink)]">
-              Confirm password
-            </label>
-            <input
-              type="password"
+            <Label htmlFor="confirmPassword">Confirm password</Label>
+            <Input
+              id="confirmPassword" type="password"
               {...register("confirmPassword", {
                 required: "Please confirm your password.",
                 validate: (value) => value === password || "Passwords do not match.",
               })}
-              className="w-full rounded-lg border border-[var(--color-mist)] px-4 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
-              placeholder="Re-enter your password"
             />
-            {errors.confirmPassword && (
-              <p className="mt-1 text-xs text-[var(--color-urgent)]">{errors.confirmPassword.message}</p>
-            )}
+            {errors.confirmPassword && <p className="mt-1 text-xs text-[var(--destructive)]">{errors.confirmPassword.message}</p>}
           </div>
 
-          {serverError && (
-            <p className="rounded-lg bg-[var(--color-urgent)]/10 px-3 py-2 text-sm text-[var(--color-urgent-dark)]">
-              {serverError}
-            </p>
-          )}
+          {serverError && <Alert>{serverError}</Alert>}
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full rounded-full bg-[var(--color-brand)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--color-brand-dark)] disabled:opacity-60"
-          >
-            {isSubmitting ? "Creating account…" : "Create account"}
-          </button>
+          <Button type="submit" disabled={isSubmitting} className="w-full" size="lg">
+            {isSubmitting ? "Creating account…" : <>Create account <ArrowRight size={16} /></>}
+          </Button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-[var(--color-slate)]">
-          Already have an account?{" "}
-          <Link to="/login" className="font-semibold text-[var(--color-brand)]">
-            Log in
-          </Link>
+        <p className="mt-6 text-center text-sm text-[var(--muted-foreground)]">
+          Already have an account? <Link to="/login" className="font-semibold text-[var(--primary)] hover:underline">Log in</Link>
         </p>
-        <p className="mt-2 text-center text-sm text-[var(--color-slate)]">
+        <p className="mt-2 text-center text-sm text-[var(--muted-foreground)]">
           Registering a blood bank?{" "}
-          <Link to="/register/blood-bank" className="font-semibold text-[var(--color-brand)]">
-            Register here
-          </Link>
+          <Link to="/register/blood-bank" className="font-semibold text-[var(--primary)] hover:underline">Register here</Link>
         </p>
-      </div>
+      </motion.div>
     </section>
   );
 }

@@ -7,6 +7,7 @@
 const bcrypt = require("bcryptjs");
 const userModel = require("../models/userModel");
 const generateJWT = require("../utils/generateJWT");
+const { isValidPassword, PASSWORD_REQUIREMENTS_MESSAGE } = require("../utils/validators");
 
 const SALT_ROUNDS = 10;
 
@@ -32,10 +33,10 @@ async function register(req, res) {
     });
   }
 
-  if (password.length < 6) {
+  if (!isValidPassword(password)) {
     return res.status(400).json({
       success: false,
-      message: "Password must be at least 6 characters long.",
+      message: PASSWORD_REQUIREMENTS_MESSAGE,
     });
   }
 
@@ -132,4 +133,22 @@ async function getProfile(req, res) {
   res.status(200).json({ success: true, user });
 }
 
-module.exports = { register, login, getProfile };
+/**
+ * PUT /api/auth/profile
+ * PROTECTED, any role. Updates name/phone only — email, password, and
+ * role all need their own separate, more carefully-guarded flows.
+ */
+async function updateProfile(req, res) {
+  const { name, phone } = req.body;
+
+  if (!name || !name.trim()) {
+    return res.status(400).json({ success: false, message: "Name is required." });
+  }
+
+  await userModel.updateUser(req.user.id, { name: name.trim(), phone });
+  const updated = await userModel.findUserById(req.user.id);
+
+  res.status(200).json({ success: true, message: "Profile updated.", user: updated });
+}
+
+module.exports = { register, login, getProfile, updateProfile };
