@@ -1,58 +1,121 @@
 @import "tailwindcss";
 
 @theme {
-  --color-paper: #f6f9f8;
-  --color-ink: #0f2a26;
-  --color-brand: #0e7c6b;
-  --color-brand-dark: #0b6357;
-  --color-brand-light: #e3f2ef;
-  --color-urgent: #e15241;
-  --color-urgent-dark: #c43f30;
-  --color-slate: #5b6d6a;
-  --color-mist: #e7efed;
+  /* Canvas & Surfaces: Supportive, rich, clinical dark slate */
+  --color-canvas: #090e17;
+  --color-surface: #111a28;
+  --color-surface-subtle: #0d1522;
+  --color-surface-elevated: #162235;
 
-  --font-display: "Manrope", ui-sans-serif, sans-serif;
-  --font-body: "Inter", ui-sans-serif, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  /* Typography: High contrast, comfortable clinical readability */
+  --color-ink-primary: #f1f5f9;
+  --color-ink-secondary: #94a3b8;
+  --color-ink-tertiary: #64748b;
+  --color-ink-inverse: #090e17;
+
+  /* Primary Brand: Luminous Clinical Teal (stands out with high clarity on dark canvas) */
+  --color-brand: #14b8a6;
+  --color-brand-hover: #2dd4bf;
+  --color-brand-active: #0d9488;
+  --color-brand-subtle: #0a2d2b;
+  --color-brand-border: #134e4a;
+  --color-brand-foreground: #ffffff;
+
+  /* Semantic Urgent / Emergency: Vivid Crimson Red */
+  --color-urgent: #ef4444;
+  --color-urgent-hover: #f87171;
+  --color-urgent-subtle: #380e11;
+  --color-urgent-border: #7f1d1d;
+  --color-urgent-foreground: #ffffff;
+
+  /* Semantic Caution / Warning: Luminous Amber */
+  --color-caution: #f59e0b;
+  --color-caution-subtle: #3a2205;
+  --color-caution-border: #78350f;
+
+  /* Semantic Success / Verified: Forest Emerald */
+  --color-verified: #10b981;
+  --color-verified-subtle: #063124;
+  --color-verified-border: #065f46;
+
+  /* Semantic Informational: Clinical Azure */
+  --color-info: #38bdf8;
+  --color-info-subtle: #0c2d48;
+  --color-info-border: #075985;
+
+  /* Line & Separator tokens for dark surfaces */
+  --color-line-subtle: #162438;
+  --color-line-default: #1f314d;
+  --color-line-strong: #2c4468;
+
+  /* Legacy variables for backwards compatibility */
+  --color-paper: var(--color-surface);
+  --color-ink: var(--color-ink-primary);
+  --color-brand-dark: var(--color-brand-active);
+  --color-brand-light: var(--color-brand-subtle);
+  --color-urgent-dark: var(--color-urgent-hover);
+  --color-slate: var(--color-ink-secondary);
+  --color-mist: var(--color-line-default);
+
+  /* Typography families */
+  --font-display: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-/* shadcn/ui expects these exact variable names — bridging them to our
-   existing palette above means every shadcn component (Button, Card,
-   Badge, etc.) automatically uses our brand colors, not shadcn's
-   default gray/zinc theme. This is the ONLY place these two systems
-   need to be connected. */
+/* shadcn/ui bridge tokens */
 :root {
-  --background: var(--color-paper);
-  --foreground: var(--color-ink);
+  --background: var(--color-canvas);
+  --foreground: var(--color-ink-primary);
+  --card: var(--color-surface);
+  --card-foreground: var(--color-ink-primary);
+  --popover: var(--color-surface-elevated);
+  --popover-foreground: var(--color-ink-primary);
   --primary: var(--color-brand);
-  --primary-foreground: #ffffff;
-  --secondary: var(--color-brand-light);
-  --secondary-foreground: var(--color-brand-dark);
-  --muted: var(--color-mist);
-  --muted-foreground: var(--color-slate);
-  --accent: var(--color-brand-light);
-  --accent-foreground: var(--color-brand-dark);
+  --primary-foreground: var(--color-brand-foreground);
+  --secondary: var(--color-brand-subtle);
+  --secondary-foreground: var(--color-brand-hover);
+  --muted: var(--color-surface-subtle);
+  --muted-foreground: var(--color-ink-secondary);
+  --accent: var(--color-brand-subtle);
+  --accent-foreground: var(--color-brand-hover);
   --destructive: var(--color-urgent);
-  --destructive-foreground: #ffffff;
-  --border: var(--color-mist);
-  --input: var(--color-mist);
+  --destructive-foreground: var(--color-urgent-foreground);
+  --border: var(--color-line-default);
+  --input: var(--color-line-default);
   --ring: var(--color-brand);
-  --radius: 0.75rem;
+  --radius: 0.625rem;
 }
 
 @layer base {
-  body {
-    background-color: var(--color-paper);
-    color: var(--color-ink);
-    font-family: var(--font-body);
+  * {
+    border-color: var(--color-line-default);
   }
-  h1, h2, h3, h4 {
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink-primary);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
+    letter-spacing: -0.02em;
+    color: var(--color-ink-primary);
   }
 }
 
-/* Signature motif: a pulse line drawing itself in once on load.
-   Respects reduced-motion — the line simply appears fully drawn instead. */
+/* Accessible focus visible utility */
+.focus-ring {
+  outline: none;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.focus-ring:focus-visible {
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.25);
+}
+
+/* Subtle heart pulse line drawing effect */
 @keyframes draw-pulse {
   to {
     stroke-dashoffset: 0;
@@ -67,21 +130,5 @@
   .pulse-draw {
     animation: none;
     stroke-dashoffset: 0;
-  }
-}
-
-/* Aceternity-style ambient background: a slow-drifting spotlight glow
-   plus a faint grid, used only in the hero. Kept subtle and slow on
-   purpose — this is decoration, not the focal point. */
-@keyframes spotlight-drift {
-  0%, 100% { transform: translate(-10%, -5%) scale(1); }
-  50% { transform: translate(10%, 5%) scale(1.15); }
-}
-.spotlight-glow {
-  animation: spotlight-drift 18s ease-in-out infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .spotlight-glow {
-    animation: none;
   }
 }

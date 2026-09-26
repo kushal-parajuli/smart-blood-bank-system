@@ -19,4 +19,4 @@ function isValidPassword(password) {
   return typeof password === "string" && PASSWORD_REGEX.test(password);
 }
 
-module.exports = { PASSWORD_REGEX, PASSWORD_REQUIREMENTS_MESSAGE, isValidPassword };
+export { PASSWORD_REGEX, PASSWORD_REQUIREMENTS_MESSAGE, isValidPassword };

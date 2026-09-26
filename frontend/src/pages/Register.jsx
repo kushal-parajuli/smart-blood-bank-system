@@ -24,7 +24,8 @@ export default function Register() {
   async function onSubmit(formData) {
     setServerError("");
     try {
-      const { confirmPassword, ...payload } = formData;
+      const payload = { ...formData };
+      delete payload.confirmPassword;
       await registerUser(payload);
       navigate("/");
     } catch (err) {

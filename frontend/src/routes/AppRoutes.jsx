@@ -17,6 +17,7 @@ import BloodBankRegister from "../pages/BloodBankRegister";
 import BankDashboard from "../pages/bloodbank/BankDashboard";
 import BookAppointment from "../pages/BookAppointment";
 import UserDashboard from "../pages/user/UserDashboard";
+import AdminDashboard from "../pages/admin/AdminDashboard";
 
 export default function AppRoutes() {
   return (
@@ -67,7 +68,22 @@ export default function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        {/* Future routes: admin dashboard */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute roles={["admin"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute roles={["admin"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </Layout>
   );

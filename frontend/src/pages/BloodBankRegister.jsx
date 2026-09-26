@@ -8,8 +8,21 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, Link } from "react-router-dom";
+import {
+  Building2,
+  User,
+  FileCheck,
+  ArrowRight,
+  Loader2,
+  Info,
+} from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import LocationPicker from "../components/common/LocationPicker";
+import { Button } from "../components/ui/button";
+import { Card } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Input } from "../components/ui/input";
+import { Alert } from "../components/ui/alert";
 
 const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 
@@ -40,11 +53,12 @@ export default function BloodBankRegister() {
   async function onSubmit(formData) {
     setServerError("");
     if (!location) {
-      setServerError("Please set your bank's location using search, your current location, or the map.");
+      setServerError("Please set your bank's geographical coordinates on the map below.");
       return;
     }
     try {
-      const { confirmPassword, ...payload } = formData;
+      const payload = { ...formData };
+      delete payload.confirmPassword;
       await registerBloodBank({
         ...payload,
         latitude: location.lat,
@@ -52,159 +66,234 @@ export default function BloodBankRegister() {
       });
       navigate("/bank/dashboard");
     } catch (err) {
-      setServerError(err.response?.data?.message || "Something went wrong. Please try again.");
+      setServerError(err.response?.data?.message || "Registration failed. Please check the details and try again.");
     }
   }
 
   return (
-    <section className="mx-auto max-w-lg px-5 py-16">
-      <h1 className="font-[var(--font-display)] text-2xl font-bold text-[var(--color-ink)]">
-        Register your blood bank
-      </h1>
-      <p className="mt-1 text-sm text-[var(--color-slate)]">
-        Manage inventory, respond to requests, and coordinate donor appointments.
-        Your account is created immediately — verification by an administrator follows separately.
-      </p>
+    <div className="min-h-[calc(100vh-4rem)] bg-[var(--background)] px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+      <div className="mx-auto max-w-2xl space-y-8">
+        {/* HEADER */}
+        <div className="space-y-3">
+          <Badge
+            variant="outline"
+            className="gap-1.5 border-[var(--color-brand-border)] bg-[var(--color-brand-subtle)] px-3 py-1 text-xs font-semibold text-[var(--color-brand-hover)] shadow-xs"
+          >
+            <Building2 size={13} className="text-[var(--primary)]" />
+            Institutional Blood Bank Onboarding
+          </Badge>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-5">
-        <div className="border-b border-[var(--color-mist)] pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-slate)]">
-          Account
-        </div>
+          <h1 className="font-[var(--font-display)] text-3xl font-extrabold tracking-tight text-[var(--foreground)] sm:text-4xl">
+            Register Your Blood Bank
+          </h1>
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-[var(--color-ink)]">Contact person's name</label>
-          <input
-            {...register("name", { required: "Name is required." })}
-            className="w-full rounded-lg border border-[var(--color-mist)] px-4 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
-          />
-          {errors.name && <p className="mt-1 text-xs text-[var(--color-urgent)]">{errors.name.message}</p>}
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-[var(--color-ink)]">Email</label>
-          <input
-            type="email"
-            {...register("email", { required: "Email is required." })}
-            className="w-full rounded-lg border border-[var(--color-mist)] px-4 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
-          />
-          {errors.email && <p className="mt-1 text-xs text-[var(--color-urgent)]">{errors.email.message}</p>}
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-[var(--color-ink)]">
-            Phone <span className="text-[var(--color-slate)] font-normal">(optional)</span>
-          </label>
-          <input
-            {...register("phone")}
-            className="w-full rounded-lg border border-[var(--color-mist)] px-4 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-[var(--color-ink)]">Password</label>
-          <input
-            type="password"
-            {...register("password", {
-              required: "Password is required.",
-              pattern: {
-                value: PASSWORD_PATTERN,
-                message: "Must be at least 8 characters, with uppercase, lowercase, a number, and a special character.",
-              },
-            })}
-            className="w-full rounded-lg border border-[var(--color-mist)] px-4 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
-          />
-          {errors.password && <p className="mt-1 text-xs text-[var(--color-urgent)]">{errors.password.message}</p>}
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-[var(--color-ink)]">Confirm password</label>
-          <input
-            type="password"
-            {...register("confirmPassword", {
-              required: "Please confirm your password.",
-              validate: (value) => value === password || "Passwords do not match.",
-            })}
-            className="w-full rounded-lg border border-[var(--color-mist)] px-4 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
-          />
-          {errors.confirmPassword && (
-            <p className="mt-1 text-xs text-[var(--color-urgent)]">{errors.confirmPassword.message}</p>
-          )}
-        </div>
-
-        <div className="border-b border-[var(--color-mist)] pb-1 pt-4 text-xs font-semibold uppercase tracking-wide text-[var(--color-slate)]">
-          Blood bank details
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-[var(--color-ink)]">Bank name</label>
-          <input
-            {...register("bankName", { required: "Bank name is required." })}
-            className="w-full rounded-lg border border-[var(--color-mist)] px-4 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
-          />
-          {errors.bankName && <p className="mt-1 text-xs text-[var(--color-urgent)]">{errors.bankName.message}</p>}
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-[var(--color-ink)]">License number</label>
-          <input
-            {...register("licenseNumber", { required: "License number is required." })}
-            className="w-full rounded-lg border border-[var(--color-mist)] px-4 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
-          />
-          {errors.licenseNumber && (
-            <p className="mt-1 text-xs text-[var(--color-urgent)]">{errors.licenseNumber.message}</p>
-          )}
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-[var(--color-ink)]">City</label>
-            <input
-              {...register("city")}
-              className="w-full rounded-lg border border-[var(--color-mist)] px-4 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-[var(--color-ink)]">District</label>
-            <input
-              {...register("district")}
-              className="w-full rounded-lg border border-[var(--color-mist)] px-4 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-[var(--color-ink)]">
-            Address <span className="text-[var(--color-slate)] font-normal">(optional)</span>
-          </label>
-          <input
-            {...register("address")}
-            className="w-full rounded-lg border border-[var(--color-mist)] px-4 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-[var(--color-ink)]">Location</label>
-          <LocationPicker value={location} onSelect={handleLocationSelect} />
-        </div>
-
-        {serverError && (
-          <p className="rounded-lg bg-[var(--color-urgent)]/10 px-3 py-2 text-sm text-[var(--color-urgent-dark)]">
-            {serverError}
+          <p className="text-sm leading-relaxed text-[var(--muted-foreground)] sm:text-base">
+            Establish your facility portal to manage blood batch inventory, fulfill hospital requests, and coordinate voluntary donor appointments across Nepal.
           </p>
-        )}
+        </div>
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full rounded-full bg-[var(--color-brand)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--color-brand-dark)] disabled:opacity-60"
-        >
-          {isSubmitting ? "Registering…" : "Register blood bank"}
-        </button>
-      </form>
+        {serverError && <Alert variant="destructive">{serverError}</Alert>}
 
-      <p className="mt-6 text-center text-sm text-[var(--color-slate)]">
-        Already registered? <Link to="/login" className="font-semibold text-[var(--color-brand)]">Log in</Link>
-      </p>
-    </section>
+        <Card className="border-[var(--border)] bg-[var(--card)] p-5 shadow-sm sm:p-8">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+            {/* SECTION 1: ACCOUNT CREDENTIALS */}
+            <div>
+              <div className="flex items-center gap-2 border-b border-[var(--border)] pb-2 mb-4">
+                <User size={16} className="text-[var(--primary)]" />
+                <h3 className="font-[var(--font-display)] text-sm font-bold uppercase tracking-wider text-[var(--foreground)]">
+                  1. Administrator &amp; Account Credentials
+                </h3>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-[var(--foreground)]">
+                    Authorized Representative Name <span className="text-[var(--destructive)]">*</span>
+                  </label>
+                  <Input
+                    placeholder="Full name of director, manager, or in-charge"
+                    {...register("name", { required: "Representative name is required." })}
+                  />
+                  {errors.name && (
+                    <p className="mt-1 text-xs text-[var(--destructive)]">{errors.name.message}</p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-[var(--foreground)]">
+                      Official Email <span className="text-[var(--destructive)]">*</span>
+                    </label>
+                    <Input
+                      type="email"
+                      placeholder="bank@hospital.org"
+                      {...register("email", { required: "Email is required." })}
+                    />
+                    {errors.email && (
+                      <p className="mt-1 text-xs text-[var(--destructive)]">{errors.email.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-[var(--foreground)]">
+                      Emergency Contact Phone <span className="text-xs text-[var(--muted-foreground)] font-normal">(optional)</span>
+                    </label>
+                    <Input
+                      type="tel"
+                      placeholder="e.g. 01-4412345 / 9800000000"
+                      {...register("phone")}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-[var(--foreground)]">
+                      Password <span className="text-[var(--destructive)]">*</span>
+                    </label>
+                    <Input
+                      type="password"
+                      placeholder="Min 8 chars, 1 upper, 1 num, 1 sym"
+                      {...register("password", {
+                        required: "Password is required.",
+                        pattern: {
+                          value: PASSWORD_PATTERN,
+                          message: "At least 8 chars with uppercase, lowercase, number, and special character.",
+                        },
+                      })}
+                    />
+                    {errors.password && (
+                      <p className="mt-1 text-xs text-[var(--destructive)]">{errors.password.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-[var(--foreground)]">
+                      Confirm Password <span className="text-[var(--destructive)]">*</span>
+                    </label>
+                    <Input
+                      type="password"
+                      placeholder="Re-enter password"
+                      {...register("confirmPassword", {
+                        required: "Please confirm your password.",
+                        validate: (value) => value === password || "Passwords do not match.",
+                      })}
+                    />
+                    {errors.confirmPassword && (
+                      <p className="mt-1 text-xs text-[var(--destructive)]">{errors.confirmPassword.message}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 2: FACILITY IDENTITY */}
+            <div>
+              <div className="flex items-center gap-2 border-b border-[var(--border)] pb-2 mb-4">
+                <FileCheck size={16} className="text-[var(--primary)]" />
+                <h3 className="font-[var(--font-display)] text-sm font-bold uppercase tracking-wider text-[var(--foreground)]">
+                  2. Facility Identity &amp; Licensing
+                </h3>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-[var(--foreground)]">
+                    Official Facility / Bank Name <span className="text-[var(--destructive)]">*</span>
+                  </label>
+                  <Input
+                    placeholder="e.g. Nepal Red Cross Society Central Blood Transfusion Service"
+                    {...register("bankName", { required: "Bank name is required." })}
+                  />
+                  {errors.bankName && (
+                    <p className="mt-1 text-xs text-[var(--destructive)]">{errors.bankName.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-[var(--foreground)]">
+                    Registration / Operating License Number <span className="text-[var(--destructive)]">*</span>
+                  </label>
+                  <Input
+                    placeholder="e.g. MOHP-BB-2024-9128"
+                    {...register("licenseNumber", { required: "License number is required." })}
+                  />
+                  {errors.licenseNumber && (
+                    <p className="mt-1 text-xs text-[var(--destructive)]">{errors.licenseNumber.message}</p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-[var(--foreground)]">City / Municipality</label>
+                    <Input placeholder="e.g. Kathmandu" {...register("city")} />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-[var(--foreground)]">District</label>
+                    <Input placeholder="e.g. Kathmandu" {...register("district")} />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-[var(--foreground)]">
+                    Physical Street Address / Ward <span className="text-xs text-[var(--muted-foreground)] font-normal">(optional)</span>
+                  </label>
+                  <Input placeholder="e.g. Exhibition Road, Bhrikutimandap" {...register("address")} />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-xs font-semibold text-[var(--foreground)]">
+                    Geographical Location Pin <span className="text-[var(--destructive)]">*</span>
+                  </label>
+                  <p className="mb-2 text-xs text-[var(--muted-foreground)]">
+                    Pin your hospital or center on the map. This enables precise Haversine distance calculations when patients search for emergency blood.
+                  </p>
+                  <div className="overflow-hidden rounded-xl border border-[var(--border)]">
+                    <LocationPicker value={location} onSelect={handleLocationSelect} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* VERIFICATION NOTICE */}
+            <div className="rounded-xl border border-sky-200 bg-sky-50/60 p-4 text-xs text-sky-900 flex items-start gap-2.5">
+              <Info size={16} className="text-sky-700 shrink-0 mt-0.5" />
+              <p>
+                <strong>Verification Process:</strong> Your blood bank account is created immediately and you can log in to initialize your inventory batches. An administrator independently verifies licenses before the public &quot;Verified&quot; trust badge is activated.
+              </p>
+            </div>
+
+            {/* SUBMIT BUTTON */}
+            <div className="border-t border-[var(--border)] pt-6">
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                size="lg"
+                className="w-full gap-2 shadow-xs"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Registering Blood Bank Facility...
+                  </>
+                ) : (
+                  <>
+                    <span>Submit Blood Bank Registration</span>
+                    <ArrowRight size={16} />
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </Card>
+
+        <p className="text-center text-sm text-[var(--muted-foreground)]">
+          Already registered your facility?{" "}
+          <Link to="/login" className="font-semibold text-[var(--primary)] hover:underline">
+            Log in to portal
+          </Link>
+        </p>
+      </div>
+    </div>
   );
 }

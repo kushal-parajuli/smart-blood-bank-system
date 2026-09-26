@@ -22,7 +22,13 @@ export default function Login() {
     setServerError("");
     try {
       const loggedInUser = await login(formData);
-      navigate(loggedInUser.role === "blood_bank" ? "/bank/dashboard" : "/");
+      if (loggedInUser.role === "admin") {
+        navigate("/admin/dashboard");
+      } else if (loggedInUser.role === "blood_bank") {
+        navigate("/bank/dashboard");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
       setServerError(err.response?.data?.message || "Something went wrong. Please try again.");
     }
