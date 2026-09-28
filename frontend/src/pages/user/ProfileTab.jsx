@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { User, Phone, Mail, Loader2, Shield } from "lucide-react";
+import { User, Phone, Mail, Loader2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { Button } from "../../components/ui/button";
 import { Card } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Alert } from "../../components/ui/alert";
-import Avatar from "../../components/common/Avatar";
+import ProfileImageUploader from "../../components/common/ProfileImageUploader";
 
 export default function ProfileTab() {
   const { user, updateProfile } = useAuth();
@@ -45,7 +45,7 @@ export default function ProfileTab() {
           Account Profile
         </h2>
         <p className="text-xs text-[var(--muted-foreground)]">
-          Manage your personal details and contact preferences.
+          Manage your personal details, profile picture, and contact preferences.
         </p>
       </div>
 
@@ -56,23 +56,10 @@ export default function ProfileTab() {
         </Alert>
       )}
 
-      <Card className="border-[var(--border)] bg-[var(--card)] p-5 sm:p-7 shadow-xs">
-        <div className="flex items-center gap-4 border-b border-[var(--border)] pb-5 mb-6">
-          <Avatar
-            src={user?.profile_picture_url}
-            alt={user?.name || "User"}
-            className="h-16 w-16 text-lg border-2 border-[var(--primary)]/20 shadow-xs"
-          />
-          <div>
-            <h3 className="font-[var(--font-display)] text-base font-bold text-[var(--foreground)]">
-              {user?.name || "User Account"}
-            </h3>
-            <p className="text-xs text-[var(--muted-foreground)]">{user?.email}</p>
-            <div className="mt-1 flex items-center gap-1.5 text-[11px] font-medium text-[var(--primary)]">
-              <Shield size={12} />
-              <span className="capitalize">{user?.role || "user"} role</span>
-            </div>
-          </div>
+      <Card className="border-[var(--border)] bg-[var(--card)] p-5 sm:p-7 shadow-xs space-y-6">
+        {/* Profile Picture Uploader */}
+        <div className="border-b border-[var(--border)] pb-6">
+          <ProfileImageUploader />
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

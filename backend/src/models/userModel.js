@@ -47,7 +47,7 @@ async function createUser({ name, email, passwordHash, phone, roleId }, conn = p
  */
 async function findUserByEmail(email) {
   const [rows] = await pool.query(
-    `SELECT u.id, u.name, u.email, u.password_hash, u.phone,
+    `SELECT u.id, u.name, u.email, u.password_hash, u.phone, u.profile_picture_url,
             u.is_verified, u.is_suspended, r.name AS role
      FROM users u
      JOIN roles r ON u.role_id = r.id
@@ -65,8 +65,8 @@ async function findUserByEmail(email) {
  */
 async function findUserById(id) {
   const [rows] = await pool.query(
-    `SELECT u.id, u.name, u.email, u.phone, u.is_verified, u.is_suspended,
-            u.created_at, r.name AS role
+    `SELECT u.id, u.name, u.email, u.phone, u.profile_picture_url,
+            u.is_verified, u.is_suspended, u.created_at, r.name AS role
      FROM users u
      JOIN roles r ON u.role_id = r.id
      WHERE u.id = ?`,
@@ -80,11 +80,49 @@ async function findUserById(id) {
  * email/password/role are never touched here (those need their own
  * dedicated, more carefully-guarded flows, not a generic profile edit).
  */
-async function updateUser(id, { name, phone }) {
+async function updateUser(id, { name, phone, email }) {
+  if (email) {
+    await pool.query(
+      "UPDATE users SET name = ?, phone = ?, email = ? WHERE id = ?",
+      [name, phone || null, email, id]
+    );
+  } else {
+    await pool.query(
+      "UPDATE users SET name = ?, phone = ? WHERE id = ?",
+      [name, phone || null, id]
+    );
+  }
+}
+
+/**
+ * Updates or clears a user's profile picture URL.
+ */
+async function updateProfilePicture(id, profilePictureUrl) {
   await pool.query(
-    "UPDATE users SET name = ?, phone = ? WHERE id = ?",
-    [name, phone || null, id]
+    "UPDATE users SET profile_picture_url = ? WHERE id = ?",
+    [profilePictureUrl || null, id]
   );
+}
+
+/**
+ * Updates a user's password hash.
+ */
+async function updatePassword(id, passwordHash) {
+  await pool.query(
+    "UPDATE users SET password_hash = ? WHERE id = ?",
+    [passwordHash, id]
+  );
+}
+
+/**
+ * Retrieves the stored password hash for password verification flows.
+ */
+async function getPasswordHashById(id) {
+  const [rows] = await pool.query(
+    "SELECT password_hash FROM users WHERE id = ?",
+    [id]
+  );
+  return rows.length ? rows[0].password_hash : null;
 }
 
 module.exports = {
@@ -93,4 +131,7 @@ module.exports = {
   findUserByEmail,
   findUserById,
   updateUser,
+  updateProfilePicture,
+  updatePassword,
+  getPasswordHashById,
 };

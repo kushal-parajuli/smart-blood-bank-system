@@ -1,36 +1,81 @@
 // src/components/common/Avatar.jsx
-//
-// Consistent generic avatar fallback (a plain user silhouette icon)
-// for anyone without a profile picture — deliberately identical for everyone,
-// not personalized initials, per project architecture decisions.
+// Reusable profile avatar component adhering to the application's healthcare theme:
+// 1. If valid profile image exists -> render optimized image.
+// 2. If no image or load error -> render the first letter of the user's name as fallback.
+// 3. Graceful fallback if name is absent.
 
-import { useState } from "react";
-import { User } from "lucide-react";
+import { useState, useEffect } from "react";
 import { cn } from "../../lib/utils";
+import { getFullImageUrl } from "../../utils/imageUrl";
 
-export default function Avatar({ src, alt = "User avatar", className }) {
+const SIZE_MAP = {
+  xs: "h-6 w-6 text-[10px]",
+  sm: "h-8 w-8 text-xs",
+  md: "h-10 w-10 text-sm",
+  lg: "h-12 w-12 text-base",
+  xl: "h-16 w-16 text-xl",
+  "2xl": "h-20 w-20 text-2xl",
+};
+
+export default function Avatar({
+  src,
+  name,
+  alt,
+  size = "md",
+  className,
+  fallbackClassName,
+  title,
+}) {
   const [imgError, setImgError] = useState(false);
 
-  if (src && !imgError) {
+  // When src changes, reset error state so the new image has a chance to load
+  useEffect(() => {
+    setImgError(false);
+  }, [src]);
+
+  const fullUrl = getFullImageUrl(src);
+  const sizeClass = SIZE_MAP[size] || SIZE_MAP.md;
+
+  // Derive initial from name or alt
+  const getInitial = () => {
+    const raw = (name || alt || "").trim();
+    if (!raw) return "U";
+    return raw.charAt(0).toUpperCase();
+  };
+
+  const initial = getInitial();
+  const label = alt || (name ? `${name}'s profile` : "User profile");
+
+  if (fullUrl && !imgError) {
     return (
       <img
-        src={src}
-        alt={alt}
+        src={fullUrl}
+        alt={label}
+        title={title || label}
         onError={() => setImgError(true)}
-        className={cn("h-10 w-10 rounded-full object-cover shrink-0", className)}
+        className={cn(
+          "rounded-full object-cover shrink-0 select-none border border-[var(--border)]",
+          sizeClass,
+          className
+        )}
       />
     );
   }
 
   return (
     <div
+      role="img"
+      aria-label={label}
+      title={title || label}
       className={cn(
-        "flex h-10 w-10 items-center justify-center rounded-full bg-[var(--secondary)] text-[var(--primary)] shrink-0",
+        "flex items-center justify-center rounded-full font-bold select-none shrink-0 tracking-tight",
+        "bg-gradient-to-br from-teal-800/80 via-teal-900 to-slate-900 text-teal-200 border border-teal-700/60 shadow-xs",
+        sizeClass,
+        fallbackClassName,
         className
       )}
-      aria-label={alt}
     >
-      <User size={20} className="stroke-[2.2]" />
+      <span className="leading-none">{initial}</span>
     </div>
   );
 }

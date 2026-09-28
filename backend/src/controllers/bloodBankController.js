@@ -1,5 +1,5 @@
-// src/controllers/bloodBankController.js
-
+const fs = require("fs");
+const path = require("path");
 const bcrypt = require("bcryptjs");
 const { pool } = require("../config/db");
 const userModel = require("../models/userModel");
@@ -112,17 +112,147 @@ async function getMyProfile(req, res) {
   if (!bloodBank) {
     return res.status(404).json({ success: false, message: "Blood bank profile not found." });
   }
-  res.status(200).json({ success: true, bloodBank });
+  const images = await bloodBankModel.findImagesByBankId(bloodBank.id);
+  res.status(200).json({ success: true, bloodBank: { ...bloodBank, images } });
 }
 
 /**
  * GET /api/blood-banks
  * PUBLIC. Plain list of all banks — used by the donor booking flow to
- * pick a bank to donate at.
+ * pick a bank to donate at. Includes primary location photo.
  */
 async function listBanks(req, res) {
   const banks = await bloodBankModel.findAllBanks();
   res.status(200).json({ success: true, banks });
 }
 
-module.exports = { register, getMyProfile, listBanks };
+/**
+ * POST /api/blood-banks/images
+ * PROTECTED, role: blood_bank.
+ * Uploads a new facility / location / logo image for the authenticated bank.
+ */
+async function uploadImage(req, res) {
+  const bloodBank = await bloodBankModel.findBloodBankByUserId(req.user.id);
+  if (!bloodBank) {
+    return res.status(404).json({ success: false, message: "Blood bank profile not found." });
+  }
+
+  const files = req.files?.length ? req.files : (req.file ? [req.file] : []);
+  if (!files.length) {
+    return res.status(400).json({ success: false, message: "Please provide one or more image files to upload." });
+  }
+
+  const { imageType = "gallery", caption } = req.body;
+  const validTypes = ["logo", "owner", "building", "gallery"];
+  const finalType = validTypes.includes(imageType) ? imageType : "gallery";
+
+  const insertedImages = [];
+  for (const file of files) {
+    const imageUrl = `/uploads/blood_banks/${file.filename}`;
+    const imageId = await bloodBankModel.createBloodBankImage({
+      bloodBankId: bloodBank.id,
+      imageUrl,
+      imageType: finalType,
+      caption: caption ? caption.trim() : null,
+    });
+    insertedImages.push({
+      id: imageId,
+      blood_bank_id: bloodBank.id,
+      image_url: imageUrl,
+      image_type: finalType,
+      caption: caption ? caption.trim() : null,
+    });
+  }
+
+  const updatedImages = await bloodBankModel.findImagesByBankId(bloodBank.id);
+
+  res.status(201).json({
+    success: true,
+    message: `${insertedImages.length} photo${insertedImages.length > 1 ? "s" : ""} uploaded successfully.`,
+    image: insertedImages[0],
+    uploaded: insertedImages,
+    images: updatedImages,
+  });
+}
+
+/**
+ * GET /api/blood-banks/me/images
+ * PROTECTED, role: blood_bank.
+ * Fetches all photos uploaded by the authenticated blood bank.
+ */
+async function listMyImages(req, res) {
+  const bloodBank = await bloodBankModel.findBloodBankByUserId(req.user.id);
+  if (!bloodBank) {
+    return res.status(404).json({ success: false, message: "Blood bank profile not found." });
+  }
+
+  const images = await bloodBankModel.findImagesByBankId(bloodBank.id);
+  res.status(200).json({ success: true, images });
+}
+
+/**
+ * DELETE /api/blood-banks/images/:id
+ * PROTECTED, role: blood_bank.
+ * Deletes an image with strict ownership check.
+ */
+async function deleteImage(req, res) {
+  const bloodBank = await bloodBankModel.findBloodBankByUserId(req.user.id);
+  if (!bloodBank) {
+    return res.status(404).json({ success: false, message: "Blood bank profile not found." });
+  }
+
+  const imageId = Number(req.params.id);
+  const image = await bloodBankModel.findImageById(imageId);
+
+  if (!image) {
+    return res.status(404).json({ success: false, message: "Image not found." });
+  }
+
+  // Strict ownership check
+  if (image.blood_bank_id !== bloodBank.id) {
+    return res.status(403).json({
+      success: false,
+      message: "You are not authorized to delete photos from another blood bank facility.",
+    });
+  }
+
+  // Delete file from disk if local upload
+  try {
+    const relativePath = image.image_url.replace(/^\//, "");
+    const filePath = path.join(__dirname, "../../", relativePath);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  } catch (err) {
+    console.warn("Could not delete image file from disk:", err.message);
+  }
+
+  await bloodBankModel.deleteImageById(imageId);
+  const updatedImages = await bloodBankModel.findImagesByBankId(bloodBank.id);
+
+  res.status(200).json({
+    success: true,
+    message: "Photo deleted successfully.",
+    images: updatedImages,
+  });
+}
+
+/**
+ * GET /api/blood-banks/:id/images
+ * PUBLIC. Returns public gallery photos for a given blood bank.
+ */
+async function getBankImages(req, res) {
+  const bankId = Number(req.params.id);
+  const images = await bloodBankModel.findImagesByBankId(bankId);
+  res.status(200).json({ success: true, images });
+}
+
+module.exports = {
+  register,
+  getMyProfile,
+  listBanks,
+  uploadImage,
+  listMyImages,
+  deleteImage,
+  getBankImages,
+};

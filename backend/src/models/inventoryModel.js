@@ -123,7 +123,18 @@ async function searchAvailability({ bloodGroup, city }) {
       bb.latitude,
       bb.longitude,
       bb.is_verified_by_admin,
-      SUM(bi.quantity_units) AS total_units
+      SUM(bi.quantity_units) AS total_units,
+      (
+        SELECT bbi.image_url FROM blood_bank_images bbi
+        WHERE bbi.blood_bank_id = bb.id
+        ORDER BY CASE bbi.image_type
+          WHEN 'building' THEN 1
+          WHEN 'gallery' THEN 2
+          WHEN 'logo' THEN 3
+          ELSE 4
+        END, bbi.id ASC
+        LIMIT 1
+      ) AS primary_image_url
     FROM blood_inventory bi
     JOIN blood_banks bb ON bi.blood_bank_id = bb.id
     WHERE bi.blood_group = ?

@@ -5,6 +5,7 @@
 // managing inventory and responding to incoming requests.
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ShieldCheck,
@@ -16,10 +17,13 @@ import {
   Loader2,
   MapPin,
   Boxes,
+  Camera,
 } from "lucide-react";
 import { fetchMyBloodBankProfile } from "../../services/bloodBankService";
 import { getMyInventory, addInventoryBatch } from "../../services/inventoryService";
 import { getBankIncomingRequests, updateRequestStatus } from "../../services/requestService";
+import { getFullImageUrl } from "../../utils/imageUrl";
+import BloodBankImageManager from "../../components/bloodbank/BloodBankImageManager";
 import { Button } from "../../components/ui/button";
 import { Card } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
@@ -32,6 +36,7 @@ export default function BankDashboard() {
   const [profile, setProfile] = useState(null);
   const [batches, setBatches] = useState([]);
   const [requests, setRequests] = useState([]);
+  const [bankImages, setBankImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionError, setActionError] = useState("");
   const [actionSuccess, setActionSuccess] = useState("");
@@ -46,6 +51,26 @@ export default function BankDashboard() {
   const [addingBatch, setAddingBatch] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState(null);
 
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get("action") === "add-batch") {
+      setShowAddBatch(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    const section = searchParams.get("section");
+    if (section === "inventory") {
+      const el = document.getElementById("inventory-section");
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    } else if (section === "requests") {
+      const el = document.getElementById("requests-section");
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    } else if (section === "photos") {
+      const el = document.getElementById("photos-section");
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [searchParams]);
+
   async function loadAll() {
     setLoading(true);
     setActionError("");
@@ -58,6 +83,7 @@ export default function BankDashboard() {
       setProfile(profileData.bloodBank);
       setBatches(inventoryData.batches || []);
       setRequests(requestsData.requests || []);
+      setBankImages(profileData.bloodBank?.images || []);
     } catch {
       setActionError("Failed to load blood bank dashboard data.");
     } finally {
@@ -130,6 +156,13 @@ export default function BankDashboard() {
   const totalStockUnits = batches.reduce((sum, b) => sum + (Number(b.quantity_units) || 0), 0);
   const activeGroupsCount = new Set(batches.filter((b) => b.quantity_units > 0).map((b) => b.blood_group)).size;
 
+  // Primary location or logo photo
+  const primaryFacilityPhoto =
+    bankImages.find((img) => img.image_type === "building") ||
+    bankImages.find((img) => img.image_type === "logo") ||
+    bankImages[0] ||
+    null;
+
   if (loading) {
     return (
       <div className="min-h-[calc(100vh-4rem)] bg-[var(--background)] px-4 py-12 sm:px-6">
@@ -150,48 +183,72 @@ export default function BankDashboard() {
       <div className="mx-auto max-w-5xl space-y-8">
         {/* HEADER BAR */}
         <div className="flex flex-col justify-between gap-4 border-b border-[var(--border)] pb-6 sm:flex-row sm:items-center">
-          <div className="space-y-1">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <h1 className="font-[var(--font-display)] text-2xl font-extrabold tracking-tight text-[var(--foreground)] sm:text-3xl">
-                {profile?.bank_name}
-              </h1>
-              {profile?.is_verified_by_admin ? (
-                <Badge
-                  variant="outline"
-                  className="gap-1 border-emerald-200 bg-emerald-50 text-xs font-semibold text-emerald-800"
-                >
-                  <ShieldCheck size={13} className="text-emerald-600" />
-                  Verified Facility
-                </Badge>
-              ) : (
-                <Badge
-                  variant="outline"
-                  className="gap-1 border-amber-200 bg-amber-50 text-xs font-semibold text-amber-800"
-                >
-                  <ShieldAlert size={13} className="text-amber-600" />
-                  Pending Admin Verification
-                </Badge>
-              )}
-            </div>
+          <div className="flex items-start gap-4">
+            {primaryFacilityPhoto && (
+              <img
+                src={getFullImageUrl(primaryFacilityPhoto.image_url)}
+                alt={profile?.bank_name}
+                className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl object-cover border border-[var(--border)] shadow-xs shrink-0 bg-slate-900"
+              />
+            )}
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h1 className="font-[var(--font-display)] text-2xl font-extrabold tracking-tight text-[var(--foreground)] sm:text-3xl">
+                  {profile?.bank_name}
+                </h1>
+                {profile?.is_verified_by_admin ? (
+                  <Badge
+                    variant="outline"
+                    className="gap-1 border-emerald-200 bg-emerald-50 text-xs font-semibold text-emerald-800"
+                  >
+                    <ShieldCheck size={13} className="text-emerald-600" />
+                    Verified Facility
+                  </Badge>
+                ) : (
+                  <Badge
+                    variant="outline"
+                    className="gap-1 border-amber-200 bg-amber-50 text-xs font-semibold text-amber-800"
+                  >
+                    <ShieldAlert size={13} className="text-amber-600" />
+                    Pending Admin Verification
+                  </Badge>
+                )}
+              </div>
 
-            <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--muted-foreground)] sm:text-sm">
-              <span className="flex items-center gap-1">
-                <MapPin size={14} className="text-[var(--primary)]" />
-                {profile?.city}
-                {profile?.district ? `, ${profile.district}` : ""}
-              </span>
-              <span>·</span>
-              <span className="font-[var(--font-mono)]">License: {profile?.license_number}</span>
-            </p>
+              <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--muted-foreground)] sm:text-sm">
+                <span className="flex items-center gap-1">
+                  <MapPin size={14} className="text-[var(--primary)]" />
+                  {profile?.city}
+                  {profile?.district ? `, ${profile.district}` : ""}
+                </span>
+                <span>·</span>
+                <span className="font-[var(--font-mono)]">License: {profile?.license_number}</span>
+              </p>
+            </div>
           </div>
 
-          <Button
-            onClick={() => setShowAddBatch((s) => !s)}
-            className="gap-2 shadow-xs shrink-0 self-start sm:self-center"
-          >
-            <Plus size={16} />
-            <span>{showAddBatch ? "Close Form" : "Add Blood Batch"}</span>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2 shrink-0 self-start sm:self-center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const el = document.getElementById("photos-section");
+                if (el) el.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="gap-1.5 shadow-xs text-xs"
+            >
+              <Camera size={14} />
+              <span>Manage Photos</span>
+            </Button>
+
+            <Button
+              onClick={() => setShowAddBatch((s) => !s)}
+              className="gap-2 shadow-xs shrink-0 text-xs"
+            >
+              <Plus size={16} />
+              <span>{showAddBatch ? "Close Form" : "Add Blood Batch"}</span>
+            </Button>
+          </div>
         </div>
 
         {/* FEEDBACK BANNERS */}
@@ -354,7 +411,7 @@ export default function BankDashboard() {
         </AnimatePresence>
 
         {/* SECTION 1: INCOMING REQUESTS */}
-        <div className="space-y-4">
+        <div id="requests-section" className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="font-[var(--font-display)] text-lg font-bold text-[var(--foreground)]">
@@ -470,7 +527,7 @@ export default function BankDashboard() {
         </div>
 
         {/* SECTION 2: BATCH INVENTORY */}
-        <div className="space-y-4">
+        <div id="inventory-section" className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="font-[var(--font-display)] text-lg font-bold text-[var(--foreground)]">
@@ -554,6 +611,15 @@ export default function BankDashboard() {
               )}
             </div>
           </Card>
+        </div>
+
+        {/* SECTION 3: FACILITY LOCATION PHOTOS */}
+        <div id="photos-section" className="space-y-4 pt-6 border-t border-[var(--border)]">
+          <BloodBankImageManager
+            images={bankImages}
+            onImagesChange={setBankImages}
+            bankName={profile?.bank_name}
+          />
         </div>
       </div>
     </div>

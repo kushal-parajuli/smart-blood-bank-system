@@ -27,6 +27,8 @@ import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
 import { Alert } from "../components/ui/alert";
+import BloodBankPhoto from "../components/bloodbank/BloodBankPhoto";
+import BloodBankGalleryModal from "../components/bloodbank/BloodBankGalleryModal";
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
@@ -43,6 +45,7 @@ export default function SearchBlood() {
   const [userLocation, setUserLocation] = useState(null);
   const [locating, setLocating] = useState(false);
   const [searchedGroup, setSearchedGroup] = useState("");
+  const [galleryBank, setGalleryBank] = useState(null);
 
   const executeSearch = useCallback(async (targetGroup, targetCity) => {
     if (!targetGroup) return;
@@ -109,6 +112,9 @@ export default function SearchBlood() {
     if (!user) {
       navigate("/login");
       return;
+    }
+    if (user.role !== "user") {
+      return; // Institutional accounts (admin, blood_bank) cannot requisition patient blood
     }
     navigate("/request", {
       state: {
@@ -288,18 +294,20 @@ export default function SearchBlood() {
               </p>
 
               <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-3">
-                <Button
-                  variant="destructive"
-                  onClick={() =>
-                    navigate("/request", {
-                      state: { presetBloodGroup: searchedGroup || bloodGroup },
-                    })
-                  }
-                  className="w-full sm:w-auto gap-2 font-semibold"
-                >
-                  Submit Emergency Blood Requisition
-                  <ArrowRight size={14} />
-                </Button>
+                {(!user || user.role === "user") && (
+                  <Button
+                    variant="destructive"
+                    onClick={() =>
+                      navigate("/request", {
+                        state: { presetBloodGroup: searchedGroup || bloodGroup },
+                      })
+                    }
+                    className="w-full sm:w-auto gap-2 font-semibold"
+                  >
+                    Submit Emergency Blood Requisition
+                    <ArrowRight size={14} />
+                  </Button>
+                )}
                 {city && (
                   <Button
                     variant="outline"
@@ -344,41 +352,56 @@ export default function SearchBlood() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.2, delay: Math.min(index * 0.04, 0.2) }}
                   >
-                    <Card className="border-[var(--border)] bg-[var(--card)] p-5 hover:border-[var(--color-brand)]/50 transition-all shadow-sm">
+                    <Card className="border-[var(--border)] bg-[var(--card)] p-4 sm:p-5 hover:border-[var(--color-brand)]/50 transition-all shadow-sm">
                       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                         
-                        {/* Facility Details */}
-                        <div className="space-y-1.5">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Building2 size={18} className="text-[var(--primary)] shrink-0" />
-                            <h3 className="font-heading text-base font-bold text-[var(--foreground)] sm:text-lg">
-                              {bank.bank_name}
-                            </h3>
-                            {!!bank.is_verified_by_admin && (
-                              <Badge
-                                variant="outline"
-                                className="gap-1 border-emerald-800/60 bg-emerald-950/60 px-2 py-0.5 text-[11px] font-semibold text-emerald-400"
+                        <div className="flex items-start sm:items-center gap-3.5 sm:gap-4 min-w-0">
+                          {/* Real location photo if uploaded */}
+                          <BloodBankPhoto
+                            src={bank.primary_image_url}
+                            bankName={bank.bank_name}
+                            className="w-24 h-20 sm:w-28 sm:h-20"
+                            onViewGallery={() => setGalleryBank(bank)}
+                            hasGallery={true}
+                          />
+
+                          {/* Facility Details */}
+                          <div className="space-y-1.5 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Building2 size={18} className="text-[var(--primary)] shrink-0" />
+                              <h3
+                                onClick={() => setGalleryBank(bank)}
+                                className="font-heading text-base font-bold text-[var(--foreground)] sm:text-lg hover:text-[var(--primary)] transition cursor-pointer"
+                                title="Click to view facility photos and details"
                               >
-                                <ShieldCheck size={12} className="text-emerald-400" />
-                                Verified
-                              </Badge>
-                            )}
-                          </div>
+                                {bank.bank_name}
+                              </h3>
+                              {!!bank.is_verified_by_admin && (
+                                <Badge
+                                  variant="outline"
+                                  className="gap-1 border-emerald-800/60 bg-emerald-950/60 px-2 py-0.5 text-[11px] font-semibold text-emerald-400"
+                                >
+                                  <ShieldCheck size={12} className="text-emerald-400" />
+                                  Verified
+                                </Badge>
+                              )}
+                            </div>
 
-                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--muted-foreground)]">
-                            <span className="flex items-center gap-1">
-                              <MapPin size={13} className="shrink-0 text-[var(--primary)]" />
-                              {bank.city}
-                              {bank.district ? `, ${bank.district}` : ""}
-                              {bank.province ? ` (${bank.province})` : ""}
-                            </span>
-
-                            {bank.distanceKm != null && (
-                              <span className="flex items-center gap-1 font-semibold text-[var(--primary)]">
-                                <Navigation size={12} className="shrink-0 fill-current" />
-                                {bank.distanceKm.toFixed(1)} km away
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--muted-foreground)]">
+                              <span className="flex items-center gap-1">
+                                <MapPin size={13} className="shrink-0 text-[var(--primary)]" />
+                                {bank.city}
+                                {bank.district ? `, ${bank.district}` : ""}
+                                {bank.province ? ` (${bank.province})` : ""}
                               </span>
-                            )}
+
+                              {bank.distanceKm != null && (
+                                <span className="flex items-center gap-1 font-semibold text-[var(--primary)]">
+                                  <Navigation size={12} className="shrink-0 fill-current" />
+                                  {bank.distanceKm.toFixed(1)} km away
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
 
@@ -396,14 +419,26 @@ export default function SearchBlood() {
                             <p className="text-[11px] text-[var(--muted-foreground)]">Available right now</p>
                           </div>
 
-                          <Button
-                            onClick={() => handleRequestClick(bank)}
-                            size="sm"
-                            className="mt-2 gap-1.5 shadow-sm font-semibold"
-                          >
-                            <span>Request this</span>
-                            <ArrowRight size={14} />
-                          </Button>
+                          {(!user || user.role === "user") ? (
+                            <Button
+                              onClick={() => handleRequestClick(bank)}
+                              size="sm"
+                              className="mt-2 gap-1.5 shadow-sm font-semibold"
+                            >
+                              <span>Request this</span>
+                              <ArrowRight size={14} />
+                            </Button>
+                          ) : user.role === "blood_bank" ? (
+                            <Badge variant="outline" className="mt-2 text-xs border-teal-800/60 bg-teal-950/40 text-teal-300 gap-1 py-1">
+                              <Building2 size={13} className="text-teal-400" />
+                              Facility View
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="mt-2 text-xs border-purple-800/60 bg-purple-950/40 text-purple-300 gap-1 py-1">
+                              <ShieldCheck size={13} className="text-purple-400" />
+                              Admin Audit
+                            </Badge>
+                          )}
                         </div>
 
                       </div>
@@ -498,6 +533,12 @@ export default function SearchBlood() {
           </form>
         </Card>
 
+        {/* FACILITY LOCATION GALLERY MODAL */}
+        <BloodBankGalleryModal
+          bank={galleryBank}
+          isOpen={Boolean(galleryBank)}
+          onClose={() => setGalleryBank(null)}
+        />
       </div>
     </div>
   );

@@ -19,7 +19,9 @@ export default function ProtectedRoute({ children, roles }) {
   }
 
   if (roles && !roles.includes(user.role)) {
-    return <Navigate to="/" replace />;
+    if (user.role === "admin") return <Navigate to="/admin/dashboard" replace />;
+    if (user.role === "blood_bank") return <Navigate to="/bank/dashboard" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return children;

@@ -3,6 +3,7 @@
 // donor credentialing, and user governance.
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { 
   Building2, 
   HeartHandshake, 
@@ -17,7 +18,8 @@ import {
   Phone,
   Mail,
   MapPin,
-  RefreshCw
+  RefreshCw,
+  User
 } from "lucide-react";
 import { 
   getSystemStats, 
@@ -36,9 +38,28 @@ import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import { Alert } from "../../components/ui/alert";
+import AdminProfileTab from "./AdminProfileTab";
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState("overview"); // "overview" | "banks" | "donors" | "users"
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState(
+    initialTab && ["overview", "banks", "donors", "users", "profile"].includes(initialTab)
+      ? initialTab
+      : "overview"
+  );
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab && ["overview", "banks", "donors", "users", "profile"].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setSearchParams({ tab });
+  };
   
   // State for data
   const [stats, setStats] = useState(null);
@@ -174,7 +195,7 @@ export default function AdminDashboard() {
           {/* Navigation Sub-Tabs */}
           <div className="flex items-center gap-1 border-b border-transparent -mb-px overflow-x-auto pb-1 sm:pb-0">
             <button
-              onClick={() => setActiveTab("overview")}
+              onClick={() => handleTabChange("overview")}
               className={`px-4 py-3 text-sm font-semibold border-b-2 whitespace-nowrap transition-colors ${
                 activeTab === "overview"
                   ? "border-[var(--primary)] text-[var(--primary)]"
@@ -185,7 +206,7 @@ export default function AdminDashboard() {
             </button>
 
             <button
-              onClick={() => setActiveTab("banks")}
+              onClick={() => handleTabChange("banks")}
               className={`px-4 py-3 text-sm font-semibold border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 ${
                 activeTab === "banks"
                   ? "border-[var(--primary)] text-[var(--primary)]"
@@ -201,7 +222,7 @@ export default function AdminDashboard() {
             </button>
 
             <button
-              onClick={() => setActiveTab("donors")}
+              onClick={() => handleTabChange("donors")}
               className={`px-4 py-3 text-sm font-semibold border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 ${
                 activeTab === "donors"
                   ? "border-[var(--primary)] text-[var(--primary)]"
@@ -217,7 +238,7 @@ export default function AdminDashboard() {
             </button>
 
             <button
-              onClick={() => setActiveTab("users")}
+              onClick={() => handleTabChange("users")}
               className={`px-4 py-3 text-sm font-semibold border-b-2 whitespace-nowrap transition-colors ${
                 activeTab === "users"
                   ? "border-[var(--primary)] text-[var(--primary)]"
@@ -225,6 +246,18 @@ export default function AdminDashboard() {
               }`}
             >
               User &amp; Facility Directory
+            </button>
+
+            <button
+              onClick={() => handleTabChange("profile")}
+              className={`px-4 py-3 text-sm font-semibold border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 ${
+                activeTab === "profile"
+                  ? "border-[var(--primary)] text-[var(--primary)]"
+                  : "border-transparent text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <User size={15} />
+              Admin Profile &amp; Security
             </button>
           </div>
         </Section>
@@ -759,6 +792,9 @@ export default function AdminDashboard() {
             </Card>
           </div>
         )}
+
+        {/* TAB 5: Administrator Profile & Credentials */}
+        {activeTab === "profile" && <AdminProfileTab />}
 
       </Section>
     </div>

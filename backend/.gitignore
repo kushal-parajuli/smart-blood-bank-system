@@ -1,3 +1,11 @@
 node_modules
 .env
 *.log
+uploads/*
+!uploads/avatars/
+!uploads/blood_banks/
+uploads/avatars/*
+!uploads/avatars/.gitkeep
+uploads/blood_banks/*
+!uploads/blood_banks/.gitkeep
+!uploads/blood_banks/ktm_central_*.jpg

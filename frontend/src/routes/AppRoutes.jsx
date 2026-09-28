@@ -39,7 +39,7 @@ export default function AppRoutes() {
         <Route
           path="/donor/register"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["user"]}>
               <DonorRegister />
             </ProtectedRoute>
           }
@@ -47,7 +47,7 @@ export default function AppRoutes() {
         <Route
           path="/request"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["user"]}>
               <RequestBlood />
             </ProtectedRoute>
           }
@@ -55,7 +55,7 @@ export default function AppRoutes() {
         <Route
           path="/donate"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["user"]}>
               <BookAppointment />
             </ProtectedRoute>
           }

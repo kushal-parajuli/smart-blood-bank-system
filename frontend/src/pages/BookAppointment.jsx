@@ -37,6 +37,8 @@ import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
 import { Alert } from "../components/ui/alert";
+import BloodBankPhoto from "../components/bloodbank/BloodBankPhoto";
+import BloodBankGalleryModal from "../components/bloodbank/BloodBankGalleryModal";
 
 export default function BookAppointment() {
   const [checkingDonor, setCheckingDonor] = useState(true);
@@ -51,6 +53,7 @@ export default function BookAppointment() {
   const [step, setStep] = useState("pickBank"); // 'pickBank' | 'details' | 'done'
   const [selectedBank, setSelectedBank] = useState(null);
   const [confirmation, setConfirmation] = useState(null);
+  const [galleryBank, setGalleryBank] = useState(null);
 
   const [form, setForm] = useState({
     date: todayDateString(),
@@ -328,12 +331,25 @@ export default function BookAppointment() {
           {/* FACILITY CALLOUT */}
           <Card className="border-[var(--primary)]/30 bg-[var(--secondary)]/40 p-4 sm:p-5">
             <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-subtle)] text-[var(--primary)] border border-[var(--color-brand-border)]">
-                  <Building2 size={20} />
-                </div>
-                <div>
-                  <h3 className="font-[var(--font-display)] text-base font-bold text-[var(--foreground)]">
+              <div className="flex items-center gap-3 min-w-0">
+                <BloodBankPhoto
+                  src={selectedBank?.primary_image_url}
+                  bankName={selectedBank?.bank_name}
+                  className="h-12 w-12 rounded-xl"
+                  onViewGallery={() => setGalleryBank(selectedBank)}
+                  hasGallery={true}
+                />
+                {!selectedBank?.primary_image_url && (
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-subtle)] text-[var(--primary)] border border-[var(--color-brand-border)]">
+                    <Building2 size={20} />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <h3
+                    onClick={() => setGalleryBank(selectedBank)}
+                    className="font-[var(--font-display)] text-base font-bold text-[var(--foreground)] truncate hover:text-[var(--primary)] transition cursor-pointer"
+                    title="Click to view facility gallery"
+                  >
                     {selectedBank?.bank_name}
                   </h3>
                   <p className="text-xs text-[var(--muted-foreground)]">
@@ -634,31 +650,44 @@ export default function BookAppointment() {
               {sortedBanks.map((bank) => (
                 <Card
                   key={bank.id}
-                  className="border-[var(--border)] bg-[var(--card)] p-5 transition-all hover:border-[var(--primary)]/40 shadow-xs sm:p-6"
+                  className="border-[var(--border)] bg-[var(--card)] p-4 sm:p-5 transition-all hover:border-[var(--primary)]/40 shadow-xs"
                 >
                   <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                    <div className="space-y-1.5">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-[var(--font-display)] text-base font-bold text-[var(--foreground)] sm:text-lg">
-                          {bank.bank_name}
-                        </h3>
-                        {!!bank.is_verified_by_admin && (
-                          <Badge
-                            variant="outline"
-                            className="border-emerald-200 bg-emerald-50 text-[10px] text-emerald-800"
-                          >
-                            <ShieldCheck size={11} className="text-emerald-600" /> Verified Facility
-                          </Badge>
-                        )}
-                      </div>
+                    <div className="flex items-start sm:items-center gap-3.5 sm:gap-4 min-w-0">
+                      <BloodBankPhoto
+                        src={bank.primary_image_url}
+                        bankName={bank.bank_name}
+                        className="w-20 h-16 sm:w-24 sm:h-20"
+                        onViewGallery={() => setGalleryBank(bank)}
+                        hasGallery={true}
+                      />
 
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--muted-foreground)]">
-                        <span className="flex items-center gap-1">
-                          <MapPin size={13} className="shrink-0 text-[var(--primary)]" />
-                          {bank.city}
-                          {bank.district ? `, ${bank.district}` : ""}
-                          {bank.province ? ` (${bank.province})` : ""}
-                        </span>
+                      <div className="space-y-1.5 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3
+                            onClick={() => setGalleryBank(bank)}
+                            className="font-[var(--font-display)] text-base font-bold text-[var(--foreground)] sm:text-lg hover:text-[var(--primary)] transition cursor-pointer"
+                            title="Click to view facility gallery"
+                          >
+                            {bank.bank_name}
+                          </h3>
+                          {!!bank.is_verified_by_admin && (
+                            <Badge
+                              variant="outline"
+                              className="border-emerald-200 bg-emerald-50 text-[10px] text-emerald-800"
+                            >
+                              <ShieldCheck size={11} className="text-emerald-600" /> Verified Facility
+                            </Badge>
+                          )}
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--muted-foreground)]">
+                          <span className="flex items-center gap-1">
+                            <MapPin size={13} className="shrink-0 text-[var(--primary)]" />
+                            {bank.city}
+                            {bank.district ? `, ${bank.district}` : ""}
+                            {bank.province ? ` (${bank.province})` : ""}
+                          </span>
 
                         {bank.distanceKm != null && (
                           <span className="flex items-center gap-1 font-semibold text-[var(--primary)]">
@@ -666,6 +695,7 @@ export default function BookAppointment() {
                             {bank.distanceKm.toFixed(1)} km away
                           </span>
                         )}
+                        </div>
                       </div>
                     </div>
 
@@ -683,6 +713,13 @@ export default function BookAppointment() {
           )}
         </div>
       </div>
+
+      {/* Facility Gallery & Location Modal */}
+      <BloodBankGalleryModal
+        bank={galleryBank}
+        isOpen={!!galleryBank}
+        onClose={() => setGalleryBank(null)}
+      />
     </div>
   );
 }

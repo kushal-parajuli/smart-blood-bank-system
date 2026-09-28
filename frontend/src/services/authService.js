@@ -25,3 +25,24 @@ export async function updateProfile(data) {
   const res = await api.put("/auth/profile", data);
   return res.data;
 }
+
+export async function changePassword(data) {
+  const res = await api.put("/auth/password", data);
+  return res.data;
+}
+
+export async function uploadProfilePicture(file) {
+  const formData = new FormData();
+  formData.append("picture", file);
+  const res = await api.post("/auth/profile/picture", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return res.data;
+}
+
+export async function removeProfilePicture() {
+  const res = await api.delete("/auth/profile/picture");
+  return res.data;
+}

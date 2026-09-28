@@ -16,12 +16,15 @@ import { haversineDistanceKm } from "../../utils/distance";
 import { Button } from "../../components/ui/button";
 import { Card } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
+import BloodBankPhoto from "../../components/bloodbank/BloodBankPhoto";
+import BloodBankGalleryModal from "../../components/bloodbank/BloodBankGalleryModal";
 
 export default function BloodBanksTab() {
   const [banks, setBanks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState(null);
   const [locating, setLocating] = useState(false);
+  const [galleryBank, setGalleryBank] = useState(null);
 
   useEffect(() => {
     listBloodBanks()
@@ -121,39 +124,62 @@ export default function BloodBanksTab() {
               className="border-[var(--border)] bg-[var(--card)] p-4 sm:p-5 transition-all hover:border-[var(--primary)]/40 shadow-xs"
             >
               <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Building2 size={16} className="text-[var(--primary)] shrink-0" />
-                    <h3 className="font-[var(--font-display)] text-base font-bold text-[var(--foreground)]">
-                      {bank.bank_name}
-                    </h3>
-                    {!!bank.is_verified_by_admin && (
-                      <Badge
-                        variant="outline"
-                        className="border-emerald-200 bg-emerald-50 text-[10px] text-emerald-800"
+                <div className="flex items-start sm:items-center gap-3.5 sm:gap-4 min-w-0">
+                  <BloodBankPhoto
+                    src={bank.primary_image_url}
+                    bankName={bank.bank_name}
+                    className="w-20 h-16 sm:w-24 sm:h-20"
+                    onViewGallery={() => setGalleryBank(bank)}
+                    hasGallery={true}
+                  />
+
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Building2 size={16} className="text-[var(--primary)] shrink-0" />
+                      <h3
+                        onClick={() => setGalleryBank(bank)}
+                        className="font-[var(--font-display)] text-base font-bold text-[var(--foreground)] hover:text-[var(--primary)] transition cursor-pointer"
+                        title="Click to view facility gallery"
                       >
-                        <ShieldCheck size={11} className="text-emerald-600" /> Verified Facility
-                      </Badge>
-                    )}
-                  </div>
+                        {bank.bank_name}
+                      </h3>
+                      {!!bank.is_verified_by_admin && (
+                        <Badge
+                          variant="outline"
+                          className="border-emerald-200 bg-emerald-50 text-[10px] text-emerald-800"
+                        >
+                          <ShieldCheck size={11} className="text-emerald-600" /> Verified Facility
+                        </Badge>
+                      )}
+                    </div>
 
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--muted-foreground)]">
-                    <span className="flex items-center gap-1">
-                      <MapPin size={13} className="text-[var(--primary)]" />
-                      {bank.city}
-                      {bank.district ? `, ${bank.district}` : ""}
-                    </span>
-
-                    {bank.distanceKm != null && (
-                      <span className="font-semibold text-[var(--primary)] flex items-center gap-1">
-                        <Navigation size={11} className="fill-current" />
-                        {bank.distanceKm.toFixed(1)} km away
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--muted-foreground)]">
+                      <span className="flex items-center gap-1">
+                        <MapPin size={13} className="text-[var(--primary)]" />
+                        {bank.city}
+                        {bank.district ? `, ${bank.district}` : ""}
                       </span>
-                    )}
+
+                      {bank.distanceKm != null && (
+                        <span className="font-semibold text-[var(--primary)] flex items-center gap-1">
+                          <Navigation size={11} className="fill-current" />
+                          {bank.distanceKm.toFixed(1)} km away
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 border-t border-[var(--border)] pt-3 sm:border-t-0 sm:pt-0">
+                <div className="flex items-center gap-2 border-t border-[var(--border)] pt-3 sm:border-t-0 sm:pt-0 shrink-0">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setGalleryBank(bank)}
+                    className="text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                  >
+                    View Photos
+                  </Button>
                   <Button asChild size="sm" variant="outline" className="text-xs gap-1.5">
                     <Link to="/donate">
                       <HeartHandshake size={13} />
@@ -172,6 +198,13 @@ export default function BloodBanksTab() {
           ))
         )}
       </div>
+
+      {/* GALLERY MODAL */}
+      <BloodBankGalleryModal
+        bank={galleryBank}
+        isOpen={Boolean(galleryBank)}
+        onClose={() => setGalleryBank(null)}
+      />
     </div>
   );
 }

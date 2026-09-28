@@ -19,12 +19,14 @@ import {
   Award,
   Sparkles,
   MapPin,
-  AlertTriangle
+  AlertTriangle,
+  Droplet
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import Section from "../components/layout/Section";
+import { useAuth } from "../context/AuthContext";
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const POPULAR_DISTRICTS = [
@@ -73,6 +75,7 @@ const DONATION_STEPS = [
 
 export default function Home() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [selectedGroup, setSelectedGroup] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState("");
 
@@ -112,26 +115,74 @@ export default function Home() {
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 pt-2">
-                <Button 
-                  asChild 
-                  variant="destructive" 
-                  size="lg" 
-                  className="w-full sm:w-auto shadow-md shadow-red-950/50 font-semibold gap-2"
-                >
-                  <Link to="/request">
-                    <Siren size={18} className="animate-pulse" /> Emergency Blood Requisition
-                  </Link>
-                </Button>
-                <Button 
-                  asChild 
-                  variant="outline" 
-                  size="lg" 
-                  className="w-full sm:w-auto bg-[var(--card)] hover:bg-[var(--color-surface-elevated)] border-[var(--border)] text-[var(--foreground)]"
-                >
-                  <Link to="/donor/register">
-                    <HeartHandshake size={18} className="text-[var(--primary)]" /> Register as a Donor
-                  </Link>
-                </Button>
+                {user?.role === "admin" ? (
+                  <>
+                    <Button 
+                      asChild 
+                      size="lg" 
+                      className="w-full sm:w-auto bg-purple-700 hover:bg-purple-800 text-white font-semibold gap-2 shadow-md shadow-purple-950/50"
+                    >
+                      <Link to="/admin/dashboard">
+                        <ShieldCheck size={18} /> Open Admin Console
+                      </Link>
+                    </Button>
+                    <Button 
+                      asChild 
+                      variant="outline" 
+                      size="lg" 
+                      className="w-full sm:w-auto bg-[var(--card)] hover:bg-[var(--color-surface-elevated)] border-[var(--border)] text-[var(--foreground)]"
+                    >
+                      <Link to="/admin/dashboard?tab=banks">
+                        <Building2 size={18} className="text-purple-400" /> Facility Verifications
+                      </Link>
+                    </Button>
+                  </>
+                ) : user?.role === "blood_bank" ? (
+                  <>
+                    <Button 
+                      asChild 
+                      size="lg" 
+                      className="w-full sm:w-auto bg-teal-600 hover:bg-teal-700 text-white font-semibold gap-2 shadow-md shadow-teal-950/50"
+                    >
+                      <Link to="/bank/dashboard">
+                        <Building2 size={18} /> Open Bank Dashboard
+                      </Link>
+                    </Button>
+                    <Button 
+                      asChild 
+                      variant="outline" 
+                      size="lg" 
+                      className="w-full sm:w-auto bg-[var(--card)] hover:bg-[var(--color-surface-elevated)] border-[var(--border)] text-[var(--foreground)]"
+                    >
+                      <Link to="/bank/dashboard?section=inventory">
+                        <Droplet size={18} className="text-teal-400" /> Manage Blood Stock
+                      </Link>
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button 
+                      asChild 
+                      variant="destructive" 
+                      size="lg" 
+                      className="w-full sm:w-auto shadow-md shadow-red-950/50 font-semibold gap-2"
+                    >
+                      <Link to="/request">
+                        <Siren size={18} className="animate-pulse" /> Emergency Blood Requisition
+                      </Link>
+                    </Button>
+                    <Button 
+                      asChild 
+                      variant="outline" 
+                      size="lg" 
+                      className="w-full sm:w-auto bg-[var(--card)] hover:bg-[var(--color-surface-elevated)] border-[var(--border)] text-[var(--foreground)]"
+                    >
+                      <Link to={user ? "/donate" : "/donor/register"}>
+                        <HeartHandshake size={18} className="text-[var(--primary)]" /> {user ? "Schedule Donation" : "Register as a Donor"}
+                      </Link>
+                    </Button>
+                  </>
+                )}
               </div>
 
               {/* Trust Badge Bar */}
@@ -409,8 +460,13 @@ export default function Home() {
 
               <div className="pt-2">
                 <Button asChild size="default">
-                  <Link to="/donate">
-                    Schedule Your Donation Appointment <ArrowRight size={15} className="ml-1.5" />
+                  <Link to={user?.role === "admin" ? "/admin/dashboard?tab=donors" : user?.role === "blood_bank" ? "/bank/dashboard" : "/donate"}>
+                    {user?.role === "admin" 
+                      ? "Review Donor Verifications" 
+                      : user?.role === "blood_bank" 
+                      ? "View Transfusion Facility Status" 
+                      : "Schedule Your Donation Appointment"} 
+                    <ArrowRight size={15} className="ml-1.5" />
                   </Link>
                 </Button>
               </div>

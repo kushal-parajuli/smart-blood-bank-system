@@ -89,11 +89,72 @@ async function findBloodBankByUserId(userId, conn = pool) {
  */
 async function findAllBanks(conn = pool) {
   const [rows] = await conn.query(
-    `SELECT id, bank_name, city, district, province, latitude, longitude, is_verified_by_admin
-     FROM blood_banks
-     ORDER BY bank_name`
+    `SELECT bb.id, bb.bank_name, bb.city, bb.district, bb.province, bb.latitude, bb.longitude, bb.is_verified_by_admin,
+            (
+              SELECT bbi.image_url FROM blood_bank_images bbi
+              WHERE bbi.blood_bank_id = bb.id
+              ORDER BY CASE bbi.image_type
+                WHEN 'building' THEN 1
+                WHEN 'gallery' THEN 2
+                WHEN 'logo' THEN 3
+                ELSE 4
+              END, bbi.id ASC
+              LIMIT 1
+            ) AS primary_image_url
+     FROM blood_banks bb
+     ORDER BY bb.bank_name`
   );
   return rows;
+}
+
+/**
+ * Creates an image record associated with a blood bank.
+ */
+async function createBloodBankImage({ bloodBankId, imageUrl, imageType = "gallery", caption }, conn = pool) {
+  const [result] = await conn.query(
+    `INSERT INTO blood_bank_images (blood_bank_id, image_url, image_type, caption)
+     VALUES (?, ?, ?, ?)`,
+    [bloodBankId, imageUrl, imageType, caption || null]
+  );
+  return result.insertId;
+}
+
+/**
+ * Fetches all images for a blood bank, ordered with building and gallery photos first.
+ */
+async function findImagesByBankId(bloodBankId, conn = pool) {
+  const [rows] = await conn.query(
+    `SELECT id, blood_bank_id, image_url, image_type, caption, created_at
+     FROM blood_bank_images
+     WHERE blood_bank_id = ?
+     ORDER BY CASE image_type
+       WHEN 'building' THEN 1
+       WHEN 'gallery' THEN 2
+       WHEN 'logo' THEN 3
+       WHEN 'owner' THEN 4
+       ELSE 5
+     END, created_at DESC`,
+    [bloodBankId]
+  );
+  return rows;
+}
+
+/**
+ * Fetches a single image by its primary key ID.
+ */
+async function findImageById(imageId, conn = pool) {
+  const [rows] = await conn.query(
+    "SELECT * FROM blood_bank_images WHERE id = ?",
+    [imageId]
+  );
+  return rows[0] || null;
+}
+
+/**
+ * Deletes an image record from blood_bank_images.
+ */
+async function deleteImageById(imageId, conn = pool) {
+  await conn.query("DELETE FROM blood_bank_images WHERE id = ?", [imageId]);
 }
 
 module.exports = {
@@ -102,4 +163,8 @@ module.exports = {
   findBloodBankById,
   findBloodBankByUserId,
   findAllBanks,
+  createBloodBankImage,
+  findImagesByBankId,
+  findImageById,
+  deleteImageById,
 };

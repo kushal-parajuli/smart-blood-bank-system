@@ -23,6 +23,8 @@ import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Alert } from "../components/ui/alert";
+import BloodBankPhoto from "../components/bloodbank/BloodBankPhoto";
+import BloodBankGalleryModal from "../components/bloodbank/BloodBankGalleryModal";
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
@@ -65,6 +67,7 @@ export default function RequestBlood() {
   const [serverError, setServerError] = useState("");
   const [assigning, setAssigning] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState(preset?.presetBloodGroup || "");
+  const [galleryBank, setGalleryBank] = useState(null);
 
   const {
     register,
@@ -483,27 +486,41 @@ export default function RequestBlood() {
                       key={bank.blood_bank_id}
                       className="flex flex-col justify-between gap-4 rounded-xl border border-[var(--border)] bg-[var(--color-surface-subtle)] p-4 transition-all hover:border-[var(--color-brand)]/50 sm:flex-row sm:items-center"
                     >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <Building2 size={16} className="text-[var(--primary)] shrink-0" />
-                          <p className="font-heading text-base font-bold text-[var(--foreground)]">
-                            {bank.bank_name}
-                          </p>
-                          {!!bank.is_verified_by_admin && (
-                            <Badge
-                              variant="outline"
-                              className="border-emerald-800/60 bg-emerald-950/60 text-[10px] text-emerald-400"
-                            >
-                              <ShieldCheck size={11} className="text-emerald-400" /> Verified
-                            </Badge>
-                          )}
-                        </div>
+                      <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+                        <BloodBankPhoto
+                          src={bank.primary_image_url}
+                          bankName={bank.bank_name}
+                          className="w-16 h-14 sm:w-20 sm:h-16"
+                          onViewGallery={() => setGalleryBank(bank)}
+                          hasGallery={true}
+                        />
 
-                        <p className="flex items-center gap-1 text-xs text-[var(--muted-foreground)]">
-                          <MapPin size={13} className="shrink-0 text-[var(--primary)]" />
-                          {bank.city}
-                          {bank.district ? `, ${bank.district}` : ""}
-                        </p>
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Building2 size={16} className="text-[var(--primary)] shrink-0" />
+                            <p
+                              onClick={() => setGalleryBank(bank)}
+                              className="font-heading text-base font-bold text-[var(--foreground)] hover:text-[var(--primary)] transition cursor-pointer"
+                              title="Click to view facility gallery"
+                            >
+                              {bank.bank_name}
+                            </p>
+                            {!!bank.is_verified_by_admin && (
+                              <Badge
+                                variant="outline"
+                                className="border-emerald-800/60 bg-emerald-950/60 text-[10px] text-emerald-400"
+                              >
+                                <ShieldCheck size={11} className="text-emerald-400" /> Verified
+                              </Badge>
+                            )}
+                          </div>
+
+                          <p className="flex items-center gap-1 text-xs text-[var(--muted-foreground)]">
+                            <MapPin size={13} className="shrink-0 text-[var(--primary)]" />
+                            {bank.city}
+                            {bank.district ? `, ${bank.district}` : ""}
+                          </p>
+                        </div>
                       </div>
 
                       <div className="flex items-center justify-between border-t border-[var(--border)] pt-3 sm:border-t-0 sm:pt-0 sm:gap-4">
@@ -624,6 +641,13 @@ export default function RequestBlood() {
           </Card>
         )}
       </div>
+
+      {/* Facility Gallery & Location Modal */}
+      <BloodBankGalleryModal
+        bank={galleryBank}
+        isOpen={!!galleryBank}
+        onClose={() => setGalleryBank(null)}
+      />
     </div>
   );
 }

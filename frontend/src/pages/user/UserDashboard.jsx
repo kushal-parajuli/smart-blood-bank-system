@@ -1,6 +1,7 @@
 // src/pages/user/UserDashboard.jsx
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { User, FileText, HeartHandshake, Building2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
@@ -9,6 +10,7 @@ import MyRequestsTab from "./MyRequestsTab";
 import MyDonationsTab from "./MyDonationsTab";
 import BloodBanksTab from "./BloodBanksTab";
 import { Badge } from "../../components/ui/badge";
+import Avatar from "../../components/common/Avatar";
 
 const TABS = [
   { key: "profile", label: "Profile", icon: User, Component: ProfileTab },
@@ -19,26 +21,51 @@ const TABS = [
 
 export default function UserDashboard() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState("profile");
-  const ActiveComponent = TABS.find((t) => t.key === activeTab).Component;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState(
+    tabParam && TABS.some((t) => t.key === tabParam) ? tabParam : "profile"
+  );
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab && TABS.some((t) => t.key === tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (key) => {
+    setActiveTab(key);
+    setSearchParams({ tab: key });
+  };
+
+  const ActiveComponent = (TABS.find((t) => t.key === activeTab) || TABS[0]).Component;
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[var(--background)] px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
       <div className="mx-auto max-w-5xl space-y-8">
         {/* HEADER BAR */}
         <div className="flex flex-col justify-between gap-4 border-b border-[var(--border)] pb-6 sm:flex-row sm:items-center">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <h1 className="font-[var(--font-display)] text-2xl font-extrabold tracking-tight text-[var(--foreground)] sm:text-3xl">
-                Personal Portal
-              </h1>
-              <Badge variant="outline" className="border-[var(--primary)]/30 text-[var(--primary)] text-xs">
-                {user?.role === "admin" ? "Admin" : user?.role === "blood_bank" ? "Blood Bank" : "User Account"}
-              </Badge>
+          <div className="flex items-center gap-4">
+            <Avatar
+              src={user?.profile_picture_url}
+              name={user?.name}
+              size="lg"
+              className="border-2 border-[var(--primary)]/40 shadow-xs"
+            />
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="font-[var(--font-display)] text-2xl font-extrabold tracking-tight text-[var(--foreground)] sm:text-3xl">
+                  {user?.name || "Personal Portal"}
+                </h1>
+                <Badge variant="outline" className="border-[var(--primary)]/30 text-[var(--primary)] text-xs">
+                  {user?.role === "admin" ? "Admin" : user?.role === "blood_bank" ? "Blood Bank" : "User Account"}
+                </Badge>
+              </div>
+              <p className="text-xs text-[var(--muted-foreground)] sm:text-sm">
+                Manage your personal credentials, view requisition status, and track voluntary donation appointments.
+              </p>
             </div>
-            <p className="text-xs text-[var(--muted-foreground)] sm:text-sm">
-              Manage your personal credentials, view requisition status, and track voluntary donation appointments.
-            </p>
           </div>
         </div>
 
@@ -51,7 +78,7 @@ export default function UserDashboard() {
               <button
                 key={tab.key}
                 type="button"
-                onClick={() => setActiveTab(tab.key)}
+                onClick={() => handleTabChange(tab.key)}
                 className={`relative flex items-center gap-2 whitespace-nowrap px-4 py-3 text-xs sm:text-sm font-semibold transition ${
                   isActive
                     ? "text-[var(--primary)]"

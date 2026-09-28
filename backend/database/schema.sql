@@ -27,6 +27,7 @@ CREATE TABLE users (
     email VARCHAR(150) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     phone VARCHAR(20),
+    profile_picture_url VARCHAR(255) NULL,
     is_verified BOOLEAN DEFAULT FALSE,
     is_suspended BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -51,6 +52,20 @@ CREATE TABLE blood_banks (
     is_verified_by_admin BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- ---------------------------------------------------------
+-- 2b. BLOOD BANK LOCATION & FACILITY IMAGES
+-- ---------------------------------------------------------
+CREATE TABLE blood_bank_images (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    blood_bank_id INT NOT NULL,
+    image_url VARCHAR(255) NOT NULL,
+    image_type ENUM('logo', 'owner', 'building', 'gallery') NOT NULL DEFAULT 'gallery',
+    caption VARCHAR(255) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (blood_bank_id) REFERENCES blood_banks(id) ON DELETE CASCADE,
+    INDEX idx_bank_images (blood_bank_id, image_type)
 );
 
 -- ---------------------------------------------------------

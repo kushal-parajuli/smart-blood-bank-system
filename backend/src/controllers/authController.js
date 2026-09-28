@@ -4,6 +4,8 @@
 // No SQL here — delegates all DB work to userModel. No JWT signing logic
 // here either — delegates to utils/generateJWT.
 
+const fs = require("fs");
+const path = require("path");
 const bcrypt = require("bcryptjs");
 const userModel = require("../models/userModel");
 const generateJWT = require("../utils/generateJWT");
@@ -115,6 +117,7 @@ async function login(req, res) {
       name: user.name,
       email: user.email,
       role: user.role,
+      profile_picture_url: user.profile_picture_url,
     },
   });
 }
@@ -135,20 +138,171 @@ async function getProfile(req, res) {
 
 /**
  * PUT /api/auth/profile
- * PROTECTED, any role. Updates name/phone only — email, password, and
- * role all need their own separate, more carefully-guarded flows.
+ * PROTECTED, any role. Updates name/phone/email.
  */
 async function updateProfile(req, res) {
-  const { name, phone } = req.body;
+  const { name, phone, email } = req.body;
 
   if (!name || !name.trim()) {
     return res.status(400).json({ success: false, message: "Name is required." });
   }
 
-  await userModel.updateUser(req.user.id, { name: name.trim(), phone });
+  const currentUser = await userModel.findUserById(req.user.id);
+  if (!currentUser) {
+    return res.status(404).json({ success: false, message: "User not found." });
+  }
+
+  let newEmail = currentUser.email;
+  if (email && email.trim().toLowerCase() !== currentUser.email.toLowerCase()) {
+    const existing = await userModel.findUserByEmail(email.trim().toLowerCase());
+    if (existing && existing.id !== req.user.id) {
+      return res.status(409).json({
+        success: false,
+        message: "An account with this email already exists.",
+      });
+    }
+    newEmail = email.trim().toLowerCase();
+  }
+
+  await userModel.updateUser(req.user.id, {
+    name: name.trim(),
+    phone: phone ? phone.trim() : null,
+    email: newEmail,
+  });
   const updated = await userModel.findUserById(req.user.id);
 
-  res.status(200).json({ success: true, message: "Profile updated.", user: updated });
+  res.status(200).json({ success: true, message: "Profile updated successfully.", user: updated });
 }
 
-module.exports = { register, login, getProfile, updateProfile };
+/**
+ * PUT /api/auth/password
+ * PROTECTED, any role. Changes the user's password after verifying the current password.
+ */
+async function changePassword(req, res) {
+  const { currentPassword, newPassword, confirmPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "Both current password and new password are required.",
+    });
+  }
+
+  if (confirmPassword !== undefined && newPassword !== confirmPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "New password and password confirmation do not match.",
+    });
+  }
+
+  if (!isValidPassword(newPassword)) {
+    return res.status(400).json({
+      success: false,
+      message: PASSWORD_REQUIREMENTS_MESSAGE,
+    });
+  }
+
+  const passwordHash = await userModel.getPasswordHashById(req.user.id);
+  if (!passwordHash) {
+    return res.status(404).json({ success: false, message: "User not found." });
+  }
+
+  const matches = await bcrypt.compare(currentPassword, passwordHash);
+  if (!matches) {
+    return res.status(401).json({
+      success: false,
+      message: "The current password you entered is incorrect.",
+    });
+  }
+
+  const isSame = await bcrypt.compare(newPassword, passwordHash);
+  if (isSame) {
+    return res.status(400).json({
+      success: false,
+      message: "New password cannot be the same as your current password.",
+    });
+  }
+
+  const newHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+  await userModel.updatePassword(req.user.id, newHash);
+
+  res.status(200).json({
+    success: true,
+    message: "Password changed successfully.",
+  });
+}
+
+/**
+ * POST /api/auth/profile/picture
+ * PROTECTED. Uploads or replaces the user's profile picture.
+ */
+async function uploadProfilePicture(req, res) {
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: "Please provide an image file to upload." });
+  }
+
+  const currentUser = await userModel.findUserById(req.user.id);
+  if (currentUser?.profile_picture_url) {
+    try {
+      const oldRelativePath = currentUser.profile_picture_url.replace(/^\//, "");
+      const oldFilePath = path.join(__dirname, "../../", oldRelativePath);
+      if (fs.existsSync(oldFilePath)) {
+        fs.unlinkSync(oldFilePath);
+      }
+    } catch (e) {
+      console.warn("Could not delete previous avatar file:", e.message);
+    }
+  }
+
+  const imageUrl = `/uploads/avatars/${req.file.filename}`;
+  await userModel.updateProfilePicture(req.user.id, imageUrl);
+  const updated = await userModel.findUserById(req.user.id);
+
+  res.status(200).json({
+    success: true,
+    message: "Profile picture updated successfully.",
+    user: updated,
+  });
+}
+
+/**
+ * DELETE /api/auth/profile/picture
+ * PROTECTED. Removes the user's profile picture.
+ */
+async function removeProfilePicture(req, res) {
+  const currentUser = await userModel.findUserById(req.user.id);
+  if (!currentUser) {
+    return res.status(404).json({ success: false, message: "User not found." });
+  }
+
+  if (currentUser.profile_picture_url) {
+    try {
+      const oldRelativePath = currentUser.profile_picture_url.replace(/^\//, "");
+      const oldFilePath = path.join(__dirname, "../../", oldRelativePath);
+      if (fs.existsSync(oldFilePath)) {
+        fs.unlinkSync(oldFilePath);
+      }
+    } catch (e) {
+      console.warn("Could not delete avatar file:", e.message);
+    }
+  }
+
+  await userModel.updateProfilePicture(req.user.id, null);
+  const updated = await userModel.findUserById(req.user.id);
+
+  res.status(200).json({
+    success: true,
+    message: "Profile picture removed successfully.",
+    user: updated,
+  });
+}
+
+module.exports = {
+  register,
+  login,
+  getProfile,
+  updateProfile,
+  changePassword,
+  uploadProfilePicture,
+  removeProfilePicture,
+};

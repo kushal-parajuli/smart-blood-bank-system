@@ -5,7 +5,13 @@
 // login/logout — nobody reaches into localStorage directly except this file.
 
 import { createContext, useContext, useState, useEffect } from "react";
-import { registerUser, loginUser, updateProfile as updateProfileApi } from "../services/authService";
+import {
+  registerUser,
+  loginUser,
+  updateProfile as updateProfileApi,
+  uploadProfilePicture as uploadProfilePictureApi,
+  removeProfilePicture as removeProfilePictureApi,
+} from "../services/authService";
 import { registerBloodBank as registerBloodBankApi } from "../services/bloodBankService";
 
 const AuthContext = createContext(null);
@@ -66,8 +72,36 @@ export function AuthProvider({ children }) {
     return merged;
   }
 
+  async function uploadAvatar(file) {
+    const result = await uploadProfilePictureApi(file);
+    const merged = { ...user, ...result.user };
+    localStorage.setItem("user", JSON.stringify(merged));
+    setUser(merged);
+    return merged;
+  }
+
+  async function removeAvatar() {
+    const result = await removeProfilePictureApi();
+    const merged = { ...user, ...result.user };
+    localStorage.setItem("user", JSON.stringify(merged));
+    setUser(merged);
+    return merged;
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, registerBloodBank, logout, updateProfile }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        register,
+        registerBloodBank,
+        logout,
+        updateProfile,
+        uploadAvatar,
+        removeAvatar,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
