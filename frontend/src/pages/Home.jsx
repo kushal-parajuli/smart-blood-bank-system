@@ -462,7 +462,7 @@ export default function Home() {
                 <Button asChild size="default">
                   <Link to={user?.role === "admin" ? "/admin/dashboard?tab=donors" : user?.role === "blood_bank" ? "/bank/dashboard" : "/donate"}>
                     {user?.role === "admin" 
-                      ? "Review Donor Verifications" 
+                      ? "View Voluntary Donors Directory" 
                       : user?.role === "blood_bank" 
                       ? "View Transfusion Facility Status" 
                       : "Schedule Your Donation Appointment"} 

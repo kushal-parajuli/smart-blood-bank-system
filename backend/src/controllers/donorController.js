@@ -54,8 +54,8 @@ async function registerAsDonor(req, res) {
 
   res.status(201).json({
     success: true,
-    message: "Donor registration successful.",
-    donor: { id: donorId, bloodGroup, isVerifiedByAdmin: false },
+    message: "Donor registration successful. You are now an active blood donor.",
+    donor: { id: donorId, bloodGroup, isVerifiedByAdmin: true },
   });
 }
 

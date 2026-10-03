@@ -8,6 +8,7 @@ const fs = require("fs");
 const path = require("path");
 const bcrypt = require("bcryptjs");
 const userModel = require("../models/userModel");
+const bloodBankModel = require("../models/bloodBankModel");
 const generateJWT = require("../utils/generateJWT");
 const { isValidPassword, PASSWORD_REQUIREMENTS_MESSAGE } = require("../utils/validators");
 
@@ -104,6 +105,24 @@ async function login(req, res) {
   const passwordMatches = await bcrypt.compare(password, user.password_hash);
   if (!passwordMatches) {
     return res.status(401).json({ success: false, message: "Invalid email or password." });
+  }
+
+  // Blood bank facilities require explicit administrator verification before accessing the system
+  if (user.role === "blood_bank") {
+    const bank = await bloodBankModel.findBloodBankByUserId(user.id);
+    if (!bank || !bank.is_verified_by_admin || bank.verification_status !== "approved") {
+      if (bank && bank.verification_status === "rejected") {
+        const reasonText = bank.rejection_reason ? ` Reason: ${bank.rejection_reason}` : "";
+        return res.status(403).json({
+          success: false,
+          message: `Your blood bank application was reviewed and rejected by an administrator.${reasonText}`,
+        });
+      }
+      return res.status(403).json({
+        success: false,
+        message: "Your blood bank registration is currently pending administrator verification and approval. Please wait for approval before logging in.",
+      });
+    }
   }
 
   const token = generateJWT({ id: user.id, role: user.role });

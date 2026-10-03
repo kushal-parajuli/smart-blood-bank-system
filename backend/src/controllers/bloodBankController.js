@@ -85,14 +85,17 @@ async function register(req, res) {
 
     await connection.commit();
 
-    const token = generateJWT({ id: userId, role: "blood_bank" });
-
     res.status(201).json({
       success: true,
-      message: "Blood bank registered successfully. Verification by an administrator is pending.",
-      token,
+      message: "Blood bank registration submitted successfully. Your facility application is pending administrator verification and approval before you can log in.",
       user: { id: userId, name, email, role: "blood_bank" },
-      bloodBank: { id: bloodBankId, bankName, licenseNumber, isVerifiedByAdmin: false },
+      bloodBank: {
+        id: bloodBankId,
+        bankName,
+        licenseNumber,
+        verificationStatus: "pending",
+        isVerifiedByAdmin: false,
+      },
     });
   } catch (err) {
     await connection.rollback();

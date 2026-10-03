@@ -19,14 +19,17 @@ import {
   Mail,
   MapPin,
   RefreshCw,
-  User
+  User,
+  X,
+  ShieldAlert,
+  Clock
 } from "lucide-react";
 import { 
   getSystemStats, 
   getUnverifiedBloodBanks, 
   verifyBloodBank, 
-  getUnverifiedDonors, 
-  verifyDonor, 
+  rejectBloodBank, 
+  getAllDonors, 
   getAllUsers, 
   suspendUser, 
   unsuspendUser 
@@ -64,9 +67,16 @@ export default function AdminDashboard() {
   // State for data
   const [stats, setStats] = useState(null);
   const [pendingBanks, setPendingBanks] = useState([]);
-  const [pendingDonors, setPendingDonors] = useState([]);
+  const [rejectedBanks, setRejectedBanks] = useState([]);
+  const [allDonors, setAllDonors] = useState([]);
   const [userList, setUserList] = useState([]);
   
+  // Blood bank queue tab filter
+  const [bankQueueFilter, setBankQueueFilter] = useState("pending"); // "pending" | "rejected"
+  const [rejectModalBank, setRejectModalBank] = useState(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [donorSearchQuery, setDonorSearchQuery] = useState("");
+
   // Loading & error states
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState(null);
@@ -77,16 +87,18 @@ export default function AdminDashboard() {
   const loadAllAdminData = useCallback(async () => {
     setLoading(true);
     try {
-      const [statsRes, banksRes, donorsRes, usersRes] = await Promise.all([
+      const [statsRes, pendingBanksRes, rejectedBanksRes, donorsRes, usersRes] = await Promise.all([
         getSystemStats().catch(() => ({ stats: null })),
-        getUnverifiedBloodBanks().catch(() => ({ banks: [] })),
-        getUnverifiedDonors().catch(() => ({ donors: [] })),
+        getUnverifiedBloodBanks("pending").catch(() => ({ banks: [] })),
+        getUnverifiedBloodBanks("rejected").catch(() => ({ banks: [] })),
+        getAllDonors().catch(() => ({ donors: [] })),
         getAllUsers().catch(() => ({ users: [] })),
       ]);
 
       if (statsRes?.stats) setStats(statsRes.stats);
-      if (banksRes?.banks) setPendingBanks(banksRes.banks);
-      if (donorsRes?.donors) setPendingDonors(donorsRes.donors);
+      if (pendingBanksRes?.banks) setPendingBanks(pendingBanksRes.banks);
+      if (rejectedBanksRes?.banks) setRejectedBanks(rejectedBanksRes.banks);
+      if (donorsRes?.donors) setAllDonors(donorsRes.donors);
       if (usersRes?.users) setUserList(usersRes.users);
     } catch {
       setNotification({ type: "error", message: "Failed to load administration data. Please refresh." });
@@ -105,7 +117,8 @@ export default function AdminDashboard() {
     try {
       await verifyBloodBank(bankId);
       setPendingBanks((prev) => prev.filter((b) => b.id !== bankId));
-      setNotification({ type: "success", message: `Blood bank #${bankId} successfully verified.` });
+      setRejectedBanks((prev) => prev.filter((b) => b.id !== bankId));
+      setNotification({ type: "success", message: `Blood bank #${bankId} successfully verified & approved.` });
       // Refresh stats
       const statsRes = await getSystemStats();
       if (statsRes?.stats) setStats(statsRes.stats);
@@ -116,17 +129,23 @@ export default function AdminDashboard() {
     }
   }
 
-  // Donor Verification Handler
-  async function handleVerifyDonor(donorId) {
-    setActionLoadingId(`donor-${donorId}`);
+  // Bank Rejection Handler
+  async function handleConfirmReject() {
+    if (!rejectModalBank) return;
+    const bankId = rejectModalBank.id;
+    setActionLoadingId(`bank-reject-${bankId}`);
     try {
-      await verifyDonor(donorId);
-      setPendingDonors((prev) => prev.filter((d) => d.id !== donorId));
-      setNotification({ type: "success", message: `Donor #${donorId} verified.` });
+      await rejectBloodBank(bankId, rejectReason);
+      const rejectedItem = { ...rejectModalBank, verification_status: "rejected", rejection_reason: rejectReason };
+      setPendingBanks((prev) => prev.filter((b) => b.id !== bankId));
+      setRejectedBanks((prev) => [rejectedItem, ...prev]);
+      setNotification({ type: "warning", message: `Blood bank application for "${rejectModalBank.bank_name}" was rejected.` });
+      setRejectModalBank(null);
+      setRejectReason("");
       const statsRes = await getSystemStats();
       if (statsRes?.stats) setStats(statsRes.stats);
     } catch (err) {
-      setNotification({ type: "error", message: err.response?.data?.message || "Failed to verify donor." });
+      setNotification({ type: "error", message: err.response?.data?.message || "Failed to reject blood bank." });
     } finally {
       setActionLoadingId(null);
     }
@@ -167,6 +186,20 @@ export default function AdminDashboard() {
       u.email?.toLowerCase().includes(query) || 
       u.phone?.includes(query);
     return matchesRole && matchesQuery;
+  });
+
+  // Filtered donors
+  const filteredDonors = allDonors.filter((d) => {
+    const query = donorSearchQuery.toLowerCase().trim();
+    if (!query) return true;
+    return (
+      d.name?.toLowerCase().includes(query) || 
+      d.blood_group?.toLowerCase().includes(query) || 
+      d.city?.toLowerCase().includes(query) || 
+      d.district?.toLowerCase().includes(query) || 
+      d.phone?.includes(query) ||
+      d.email?.toLowerCase().includes(query)
+    );
   });
 
   return (
@@ -229,10 +262,10 @@ export default function AdminDashboard() {
                   : "border-transparent text-slate-600 hover:text-slate-900"
               }`}
             >
-              Donor Verifications
-              {pendingDonors.length > 0 && (
-                <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-teal-600 text-white text-[11px] font-bold flex items-center justify-center">
-                  {pendingDonors.length}
+              Registered Donors
+              {allDonors.length > 0 && (
+                <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-teal-100 text-teal-800 text-[11px] font-bold flex items-center justify-center">
+                  {allDonors.length}
                 </span>
               )}
             </button>
@@ -342,17 +375,15 @@ export default function AdminDashboard() {
                     <HeartHandshake size={18} className="text-red-600" />
                   </div>
                   <p className="font-heading text-3xl font-extrabold text-slate-900 mt-2">
-                    {stats?.donors?.total_donors || 0}
+                    {stats?.donors?.total_donors || allDonors.length || 0}
                   </p>
                   <div className="mt-3 flex items-center justify-between text-xs">
                     <span className="text-teal-700 font-medium">
-                      ✓ {stats?.donors?.verified_donors || 0} Verified Donors
+                      ✓ Active Voluntary Lifesavers
                     </span>
-                    {pendingDonors.length > 0 && (
-                      <span className="text-amber-700 font-semibold">
-                        {pendingDonors.length} Pending
-                      </span>
-                    )}
+                    <span className="text-slate-500 font-medium">
+                      Direct Pledges
+                    </span>
                   </div>
                 </CardContent>
               </Card>
@@ -397,7 +428,7 @@ export default function AdminDashboard() {
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    onClick={() => setActiveTab("banks")}
+                    onClick={() => handleTabChange("banks")}
                     className="text-xs"
                   >
                     View Queue ({pendingBanks.length})
@@ -440,29 +471,29 @@ export default function AdminDashboard() {
                     </div>
                     <div>
                       <h3 className="font-heading font-bold text-slate-900 text-sm">
-                        Donor Applications Awaiting Review
+                        Registered Voluntary Donors
                       </h3>
-                      <p className="text-xs text-slate-500">Voluntary blood donors</p>
+                      <p className="text-xs text-slate-500">Voluntary lifesavers network</p>
                     </div>
                   </div>
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    onClick={() => setActiveTab("donors")}
+                    onClick={() => handleTabChange("donors")}
                     className="text-xs"
                   >
-                    View Queue ({pendingDonors.length})
+                    View All ({allDonors.length})
                   </Button>
                 </div>
                 <CardContent className="p-5">
-                  {pendingDonors.length === 0 ? (
+                  {allDonors.length === 0 ? (
                     <div className="text-center py-6 text-slate-500 text-xs flex flex-col items-center gap-2">
-                      <ShieldCheck size={28} className="text-teal-700" />
-                      <span>All voluntary donor profiles have been validated.</span>
+                      <HeartHandshake size={28} className="text-teal-700" />
+                      <span>No voluntary donors have registered yet.</span>
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {pendingDonors.slice(0, 3).map((donor) => (
+                      {allDonors.slice(0, 3).map((donor) => (
                         <div key={donor.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-200/80">
                           <div className="flex items-center gap-3">
                             <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-red-100 text-red-800">
@@ -470,17 +501,12 @@ export default function AdminDashboard() {
                             </span>
                             <div>
                               <p className="text-sm font-semibold text-slate-900">{donor.name}</p>
-                              <p className="text-xs text-slate-500">{donor.city}, {donor.district}</p>
+                              <p className="text-xs text-slate-500">{donor.city}{donor.district ? `, ${donor.district}` : ""}</p>
                             </div>
                           </div>
-                          <Button 
-                            size="sm" 
-                            onClick={() => handleVerifyDonor(donor.id)}
-                            disabled={actionLoadingId === `donor-${donor.id}`}
-                            className="text-xs h-8"
-                          >
-                            Verify
-                          </Button>
+                          <Badge variant="outline" className="text-[11px] text-emerald-700 border-emerald-300 bg-emerald-50">
+                            Active
+                          </Badge>
                         </div>
                       ))}
                     </div>
@@ -495,129 +521,240 @@ export default function AdminDashboard() {
         {/* TAB 2: BLOOD BANK VERIFICATION QUEUE */}
         {activeTab === "banks" && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h2 className="font-heading text-xl font-bold text-slate-900">
                   Transfusion Facility Verification Queue
                 </h2>
                 <p className="text-xs text-slate-600 mt-0.5">
-                  Inspect institutional credentials and grant official verified status.
+                  Inspect institutional credentials. Review, approve, or reject blood bank registrations.
                 </p>
               </div>
-              <Badge variant="outline" className="text-amber-800 border-amber-300 bg-amber-50">
-                {pendingBanks.length} Awaiting Review
-              </Badge>
+
+              {/* Status filter tabs */}
+              <div className="flex items-center gap-1 bg-[var(--card)] p-1 rounded-lg border border-[var(--border)] shadow-xs self-start sm:self-auto">
+                <button
+                  onClick={() => setBankQueueFilter("pending")}
+                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 ${
+                    bankQueueFilter === "pending"
+                      ? "bg-amber-500 text-white"
+                      : "text-[var(--muted-foreground)] hover:text-white hover:bg-[var(--color-surface-subtle)]"
+                  }`}
+                >
+                  Pending Review ({pendingBanks.length})
+                </button>
+                <button
+                  onClick={() => setBankQueueFilter("rejected")}
+                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 ${
+                    bankQueueFilter === "rejected"
+                      ? "bg-rose-600 text-white"
+                      : "text-[var(--muted-foreground)] hover:text-white hover:bg-[var(--color-surface-subtle)]"
+                  }`}
+                >
+                  Rejected ({rejectedBanks.length})
+                </button>
+              </div>
             </div>
 
-            {pendingBanks.length === 0 ? (
-              <Card variant="subtle" className="p-12 text-center">
-                <ShieldCheck size={40} className="mx-auto text-teal-700 mb-3" />
-                <h3 className="font-heading font-bold text-slate-900 text-base">
-                  No Pending Facility Verifications
-                </h3>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
-                  Every registered blood bank has been reviewed and granted access to the network repository.
-                </p>
-              </Card>
+            {bankQueueFilter === "pending" ? (
+              pendingBanks.length === 0 ? (
+                <Card variant="subtle" className="p-12 text-center">
+                  <ShieldCheck size={40} className="mx-auto text-teal-700 mb-3" />
+                  <h3 className="font-heading font-bold text-slate-900 text-base">
+                    No Pending Facility Verifications
+                  </h3>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
+                    Every registered blood bank has been reviewed. Facilities can only log in once officially verified.
+                  </p>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 gap-4">
+                  {pendingBanks.map((bank) => (
+                    <Card key={bank.id} variant="default" className="p-6 hover:border-slate-300 transition-all">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-3">
+                            <h3 className="font-heading text-lg font-bold text-slate-900">
+                              {bank.bank_name}
+                            </h3>
+                            <Badge variant="outline" className="text-xs text-amber-800 border-amber-300 bg-amber-50">
+                              Pending Admin Review
+                            </Badge>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1.5 text-xs text-slate-600 pt-1">
+                            <span className="flex items-center gap-1.5">
+                              <Building2 size={13} className="text-slate-400" />
+                              <strong>License:</strong> {bank.license_number}
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <MapPin size={13} className="text-slate-400" />
+                              {bank.city}, {bank.district}, {bank.province}
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <Calendar size={13} className="text-slate-400" />
+                              Applied: {new Date(bank.created_at).toLocaleDateString()}
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <Users size={13} className="text-slate-400" />
+                              Contact: {bank.contact_name}
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <Mail size={13} className="text-slate-400" />
+                              {bank.email}
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <Phone size={13} className="text-slate-400" />
+                              {bank.phone || "No phone provided"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2.5 shrink-0 self-start md:self-center">
+                          <Button
+                            onClick={() => handleVerifyBank(bank.id)}
+                            disabled={actionLoadingId === `bank-${bank.id}`}
+                            className="gap-1.5 font-semibold"
+                          >
+                            <Check size={16} /> 
+                            {actionLoadingId === `bank-${bank.id}` ? "Approving…" : "Approve & Verify"}
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setRejectModalBank(bank);
+                              setRejectReason("");
+                            }}
+                            disabled={actionLoadingId === `bank-${bank.id}`}
+                            className="gap-1.5 font-semibold text-rose-700 border-rose-300 hover:bg-rose-50"
+                          >
+                            <Ban size={15} />
+                            Reject
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )
             ) : (
-              <div className="grid grid-cols-1 gap-4">
-                {pendingBanks.map((bank) => (
-                  <Card key={bank.id} variant="default" className="p-6 hover:border-slate-300 transition-all">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-3">
-                          <h3 className="font-heading text-lg font-bold text-slate-900">
-                            {bank.bank_name}
-                          </h3>
-                          <Badge variant="outline" className="text-xs text-amber-800 border-amber-300 bg-amber-50">
-                            Pending Validation
-                          </Badge>
+              rejectedBanks.length === 0 ? (
+                <Card variant="subtle" className="p-12 text-center">
+                  <ShieldCheck size={40} className="mx-auto text-slate-400 mb-3" />
+                  <h3 className="font-heading font-bold text-slate-900 text-base">
+                    No Rejected Facility Registrations
+                  </h3>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
+                    No facility registrations have been rejected.
+                  </p>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 gap-4">
+                  {rejectedBanks.map((bank) => (
+                    <Card key={bank.id} variant="default" className="p-6 border-rose-200/80 hover:border-rose-300 transition-all">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-3">
+                            <h3 className="font-heading text-lg font-bold text-slate-900">
+                              {bank.bank_name}
+                            </h3>
+                            <Badge variant="outline" className="text-xs text-rose-800 border-rose-300 bg-rose-50">
+                              Registration Rejected
+                            </Badge>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1.5 text-xs text-slate-600 pt-1">
+                            <span className="flex items-center gap-1.5">
+                              <Building2 size={13} className="text-slate-400" />
+                              <strong>License:</strong> {bank.license_number}
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <MapPin size={13} className="text-slate-400" />
+                              {bank.city}, {bank.district}, {bank.province}
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <Mail size={13} className="text-slate-400" />
+                              {bank.email}
+                            </span>
+                          </div>
+
+                          {bank.rejection_reason && (
+                            <div className="rounded-lg bg-rose-50 border border-rose-200 p-2.5 text-xs text-rose-900 mt-2">
+                              <strong>Rejection Reason:</strong> {bank.rejection_reason}
+                            </div>
+                          )}
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1.5 text-xs text-slate-600 pt-1">
-                          <span className="flex items-center gap-1.5">
-                            <Building2 size={13} className="text-slate-400" />
-                            <strong>License:</strong> {bank.license_number}
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <MapPin size={13} className="text-slate-400" />
-                            {bank.city}, {bank.district}, {bank.province}
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <Calendar size={13} className="text-slate-400" />
-                            Applied: {new Date(bank.created_at).toLocaleDateString()}
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <Users size={13} className="text-slate-400" />
-                            Contact: {bank.contact_name}
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <Mail size={13} className="text-slate-400" />
-                            {bank.email}
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <Phone size={13} className="text-slate-400" />
-                            {bank.phone || "No phone provided"}
-                          </span>
+                        <div className="flex items-center gap-2.5 shrink-0 self-start md:self-center">
+                          <Button
+                            variant="outline"
+                            onClick={() => handleVerifyBank(bank.id)}
+                            disabled={actionLoadingId === `bank-${bank.id}`}
+                            className="gap-1.5 font-semibold text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                          >
+                            <RotateCcw size={15} />
+                            Re-approve Facility
+                          </Button>
                         </div>
                       </div>
-
-                      <div className="flex items-center gap-3 shrink-0">
-                        <Button
-                          onClick={() => handleVerifyBank(bank.id)}
-                          disabled={actionLoadingId === `bank-${bank.id}`}
-                          className="gap-1.5 font-semibold"
-                        >
-                          <Check size={16} /> 
-                          {actionLoadingId === `bank-${bank.id}` ? "Verifying…" : "Approve & Verify Facility"}
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
+                    </Card>
+                  ))}
+                </div>
+              )
             )}
           </div>
         )}
 
-        {/* TAB 3: DONOR VERIFICATION QUEUE */}
+        {/* TAB 3: REGISTERED DONORS DIRECTORY */}
         {activeTab === "donors" && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h2 className="font-heading text-xl font-bold text-slate-900">
-                  Voluntary Donor Credentialing Queue
+                  Voluntary Lifesaver Donors Directory
                 </h2>
                 <p className="text-xs text-slate-600 mt-0.5">
-                  Review submitted donor applications and approve verified status.
+                  Normal user requests to become a donor are active immediately. View network-wide voluntary lifesavers.
                 </p>
               </div>
-              <Badge variant="outline" className="text-teal-800 border-teal-300 bg-teal-50">
-                {pendingDonors.length} Pending Approval
+              <Badge variant="outline" className="text-teal-800 border-teal-300 bg-teal-50 self-start sm:self-auto">
+                {allDonors.length} Registered Donors
               </Badge>
             </div>
 
-            {pendingDonors.length === 0 ? (
+            {/* Search Filter Bar */}
+            <div className="relative max-w-md">
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]" />
+              <Input
+                placeholder="Search donors by name, blood group, city…"
+                value={donorSearchQuery}
+                onChange={(e) => setDonorSearchQuery(e.target.value)}
+                className="pl-9 bg-[var(--card)]"
+              />
+            </div>
+
+            {filteredDonors.length === 0 ? (
               <Card variant="subtle" className="p-12 text-center">
-                <ShieldCheck size={40} className="mx-auto text-teal-700 mb-3" />
+                <HeartHandshake size={40} className="mx-auto text-teal-700 mb-3" />
                 <h3 className="font-heading font-bold text-slate-900 text-base">
-                  No Pending Donor Profiles
+                  No Donors Found
                 </h3>
                 <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
-                  All voluntary donors have been verified and can be summoned for emergency donations.
+                  {donorSearchQuery ? "No donors matched your search query." : "No voluntary donors have registered yet."}
                 </p>
               </Card>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {pendingDonors.map((donor) => (
+                {filteredDonors.map((donor) => (
                   <Card key={donor.id} variant="default" className="p-5 flex flex-col justify-between">
                     <div>
                       <div className="flex items-center justify-between mb-3">
                         <span className="font-mono text-sm font-extrabold px-2.5 py-1 rounded bg-red-100 text-red-900">
                           {donor.blood_group}
                         </span>
-                        <Badge variant="outline" className="text-[11px] text-amber-700 border-amber-300 bg-amber-50">
-                          Unverified
+                        <Badge variant="outline" className="text-[11px] text-emerald-700 border-emerald-300 bg-emerald-50">
+                          Active Donor
                         </Badge>
                       </div>
 
@@ -628,7 +765,7 @@ export default function AdminDashboard() {
                       <div className="space-y-1.5 text-xs text-slate-600 mt-3 pt-3 border-t border-slate-100">
                         <p className="flex items-center gap-1.5">
                           <MapPin size={13} className="text-slate-400" />
-                          {donor.city}, {donor.district}
+                          {donor.city}{donor.district ? `, ${donor.district}` : ""}
                         </p>
                         <p className="flex items-center gap-1.5">
                           <Phone size={13} className="text-slate-400" />
@@ -641,16 +778,9 @@ export default function AdminDashboard() {
                       </div>
                     </div>
 
-                    <div className="mt-5 pt-4 border-t border-slate-100">
-                      <Button
-                        size="sm"
-                        onClick={() => handleVerifyDonor(donor.id)}
-                        disabled={actionLoadingId === `donor-${donor.id}`}
-                        className="w-full gap-1.5"
-                      >
-                        <Check size={14} /> 
-                        {actionLoadingId === `donor-${donor.id}` ? "Verifying…" : "Verify Donor"}
-                      </Button>
+                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                      <span>Joined {new Date(donor.created_at).toLocaleDateString()}</span>
+                      <span className="text-emerald-700 font-medium">Ready for summons</span>
                     </div>
                   </Card>
                 ))}
@@ -795,6 +925,75 @@ export default function AdminDashboard() {
 
         {/* TAB 5: Administrator Profile & Credentials */}
         {activeTab === "profile" && <AdminProfileTab />}
+
+        {/* BLOOD BANK REJECTION MODAL */}
+        {rejectModalBank && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+            <div className="w-full max-w-md rounded-2xl bg-[var(--card)] p-6 shadow-xl border border-[var(--border)]">
+              <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+                <div className="flex items-center gap-2 text-rose-600">
+                  <Ban size={20} />
+                  <h3 className="font-heading font-bold text-base text-[var(--foreground)]">
+                    Reject Facility Application
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setRejectModalBank(null)}
+                  className="rounded-md p-1 text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--color-surface-subtle)]"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="py-4 space-y-3">
+                <p className="text-xs text-[var(--muted-foreground)]">
+                  You are rejecting the registration application for:
+                </p>
+                <div className="rounded-lg bg-[var(--color-surface-subtle)] p-3 text-xs space-y-1">
+                  <p className="font-bold text-[var(--foreground)]">{rejectModalBank.bank_name}</p>
+                  <p className="text-[var(--muted-foreground)]">License: {rejectModalBank.license_number}</p>
+                  <p className="text-[var(--muted-foreground)]">Contact: {rejectModalBank.contact_name} ({rejectModalBank.email})</p>
+                </div>
+
+                <div className="space-y-1.5 pt-2">
+                  <label className="text-xs font-semibold text-[var(--foreground)]">
+                    Rejection Reason (Optional):
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    placeholder="e.g., Operating license could not be verified with official registry."
+                    className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] p-2.5 text-xs text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                  />
+                  <p className="text-[11px] text-[var(--muted-foreground)]">
+                    This reason will be provided to the facility upon login attempts.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[var(--border)]">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setRejectModalBank(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleConfirmReject}
+                  disabled={actionLoadingId === `bank-reject-${rejectModalBank.id}`}
+                  className="gap-1.5"
+                >
+                  <Ban size={14} />
+                  {actionLoadingId === `bank-reject-${rejectModalBank.id}` ? "Rejecting…" : "Confirm Rejection"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </Section>
     </div>

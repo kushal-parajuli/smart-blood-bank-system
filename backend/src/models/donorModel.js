@@ -23,8 +23,8 @@ async function createDonor({
 }) {
   const [result] = await pool.query(
     `INSERT INTO donors
-       (user_id, blood_group, address, city, district, province, latitude, longitude)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+       (user_id, blood_group, address, city, district, province, latitude, longitude, is_verified_by_admin)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, TRUE)`,
     [
       userId,
       bloodGroup,

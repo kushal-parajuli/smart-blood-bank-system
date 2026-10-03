@@ -8,13 +8,23 @@ export async function getSystemStats() {
   return res.data;
 }
 
-export async function getUnverifiedBloodBanks() {
-  const res = await api.get("/admin/blood-banks/pending");
+export async function getUnverifiedBloodBanks(status = "pending") {
+  const res = await api.get(`/admin/blood-banks/pending?status=${status}`);
   return res.data;
 }
 
 export async function verifyBloodBank(id) {
   const res = await api.put(`/admin/blood-banks/${id}/verify`);
+  return res.data;
+}
+
+export async function rejectBloodBank(id, reason = "") {
+  const res = await api.put(`/admin/blood-banks/${id}/reject`, { reason });
+  return res.data;
+}
+
+export async function getAllDonors() {
+  const res = await api.get("/admin/donors");
   return res.data;
 }
 

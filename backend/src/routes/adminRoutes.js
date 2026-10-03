@@ -19,8 +19,10 @@ router.use(protect, authorize("admin"));
 // --- Blood bank verification ---
 router.get("/blood-banks/pending", asyncHandler(adminController.getUnverifiedBloodBanks));
 router.put("/blood-banks/:id/verify", asyncHandler(adminController.verifyBloodBank));
+router.put("/blood-banks/:id/reject", asyncHandler(adminController.rejectBloodBank));
 
-// --- Donor verification ---
+// --- Donor records & verification ---
+router.get("/donors", asyncHandler(adminController.getAllDonors));
 router.get("/donors/pending", asyncHandler(adminController.getUnverifiedDonors));
 router.put("/donors/:id/verify", asyncHandler(adminController.verifyDonor));
 

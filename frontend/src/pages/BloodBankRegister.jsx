@@ -15,6 +15,11 @@ import {
   ArrowRight,
   Loader2,
   Info,
+  Clock,
+  CheckCircle2,
+  ShieldAlert,
+  MapPin,
+  Mail,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import LocationPicker from "../components/common/LocationPicker";
@@ -31,6 +36,8 @@ export default function BloodBankRegister() {
   const navigate = useNavigate();
   const [location, setLocation] = useState(null);
   const [serverError, setServerError] = useState("");
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submittedData, setSubmittedData] = useState(null);
 
   const {
     register,
@@ -64,10 +71,80 @@ export default function BloodBankRegister() {
         latitude: location.lat,
         longitude: location.lng,
       });
-      navigate("/bank/dashboard");
+      setSubmittedData(formData);
+      setIsSubmitted(true);
     } catch (err) {
       setServerError(err.response?.data?.message || "Registration failed. Please check the details and try again.");
     }
+  }
+
+  if (isSubmitted) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] bg-[var(--background)] px-4 py-16 sm:px-6 lg:px-8">
+        <Card className="mx-auto max-w-xl border-[var(--border)] bg-[var(--card)] p-6 sm:p-10 text-center shadow-md">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 shadow-xs">
+            <Clock size={36} className="animate-pulse" />
+          </div>
+
+          <Badge
+            variant="outline"
+            className="mx-auto mt-4 gap-1.5 border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800"
+          >
+            <ShieldAlert size={13} className="text-amber-600" />
+            Verification Required
+          </Badge>
+
+          <h1 className="mt-4 font-[var(--font-display)] text-2xl font-extrabold tracking-tight text-[var(--foreground)] sm:text-3xl">
+            Registration Submitted for Review
+          </h1>
+
+          <p className="mt-3 text-sm leading-relaxed text-[var(--muted-foreground)]">
+            Thank you for registering <strong className="text-[var(--foreground)]">{submittedData?.bankName}</strong>.
+            Institutional accounts must be reviewed and verified by a system administrator before access is granted.
+          </p>
+
+          <div className="mx-auto mt-6 max-w-md rounded-xl border border-[var(--border)] bg-[var(--color-paper)] p-4 text-xs space-y-2 text-left">
+            <div className="flex justify-between items-center py-1 border-b border-[var(--border)]">
+              <span className="text-[var(--muted-foreground)]">Facility Name:</span>
+              <span className="font-bold text-[var(--foreground)]">{submittedData?.bankName}</span>
+            </div>
+            <div className="flex justify-between items-center py-1 border-b border-[var(--border)]">
+              <span className="text-[var(--muted-foreground)]">License Number:</span>
+              <span className="font-mono font-semibold text-[var(--primary)]">{submittedData?.licenseNumber}</span>
+            </div>
+            <div className="flex justify-between items-center py-1 border-b border-[var(--border)]">
+              <span className="text-[var(--muted-foreground)]">Location:</span>
+              <span className="font-medium text-[var(--foreground)]">
+                {submittedData?.city}{submittedData?.district ? `, ${submittedData.district}` : ""}
+              </span>
+            </div>
+            <div className="flex justify-between items-center py-1">
+              <span className="text-[var(--muted-foreground)]">Contact Email:</span>
+              <span className="font-medium text-[var(--foreground)]">{submittedData?.email}</span>
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-xl border border-sky-200 bg-sky-50/70 p-4 text-xs text-sky-900 text-left flex items-start gap-2.5">
+            <Info size={16} className="text-sky-700 shrink-0 mt-0.5" />
+            <p>
+              Once an administrator approves your license, you will be able to log in to your portal using your email and password to begin managing blood inventory.
+            </p>
+          </div>
+
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Button asChild size="lg" className="w-full sm:w-auto gap-2">
+              <Link to="/login">
+                Go to Portal Login
+                <ArrowRight size={16} />
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
+              <Link to="/">Return to Home</Link>
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
   }
 
   return (
@@ -256,10 +333,10 @@ export default function BloodBankRegister() {
             </div>
 
             {/* VERIFICATION NOTICE */}
-            <div className="rounded-xl border border-sky-200 bg-sky-50/60 p-4 text-xs text-sky-900 flex items-start gap-2.5">
-              <Info size={16} className="text-sky-700 shrink-0 mt-0.5" />
+            <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-xs text-amber-900 flex items-start gap-2.5">
+              <Info size={16} className="text-amber-700 shrink-0 mt-0.5" />
               <p>
-                <strong>Verification Process:</strong> Your blood bank account is created immediately and you can log in to initialize your inventory batches. An administrator independently verifies licenses before the public &quot;Verified&quot; trust badge is activated.
+                <strong>Admin Approval Required:</strong> Your blood bank registration is submitted directly to the system administrator queue. Administrators review and approve facility operating licenses before account login and blood inventory management are enabled.
               </p>
             </div>
 

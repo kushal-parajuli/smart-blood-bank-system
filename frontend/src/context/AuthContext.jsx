@@ -51,8 +51,10 @@ export function AuthProvider({ children }) {
 
   async function registerBloodBank(formData) {
     const data = await registerBloodBankApi(formData);
-    persistSession(data);
-    return data.user;
+    if (data?.token) {
+      persistSession(data);
+    }
+    return data;
   }
 
   function logout() {

@@ -10,7 +10,8 @@ const donorModel = require("../models/donorModel");
 const notificationModel = require("../models/notificationModel");
 
 async function getUnverifiedBloodBanks(req, res) {
-  const banks = await adminModel.getUnverifiedBloodBanks();
+  const { status } = req.query; // 'pending' | 'rejected' | 'all'
+  const banks = await adminModel.getUnverifiedBloodBanks(status);
   res.status(200).json({ success: true, count: banks.length, banks });
 }
 
@@ -26,11 +27,37 @@ async function verifyBloodBank(req, res) {
     await notificationModel.createNotification({
       userId: bank.user_id,
       type: "system",
-      message: `Your blood bank "${bank.bank_name}" has been verified by an administrator.`,
+      message: `Your blood bank "${bank.bank_name}" has been approved and verified by an administrator. You can now log in and manage your portal.`,
     });
   }
 
-  res.status(200).json({ success: true, message: "Blood bank verified.", bloodBankId: Number(id) });
+  res.status(200).json({ success: true, message: "Blood bank verified and approved.", bloodBankId: Number(id) });
+}
+
+async function rejectBloodBank(req, res) {
+  const { id } = req.params;
+  const { reason } = req.body;
+  const updated = await adminModel.rejectBloodBank(id, reason);
+  if (!updated) {
+    return res.status(404).json({ success: false, message: "Blood bank not found." });
+  }
+
+  const bank = await bloodBankModel.findBloodBankById(id);
+  if (bank) {
+    const reasonMsg = reason ? ` Reason: ${reason}` : "";
+    await notificationModel.createNotification({
+      userId: bank.user_id,
+      type: "system",
+      message: `Your blood bank application for "${bank.bank_name}" was rejected by an administrator.${reasonMsg}`,
+    });
+  }
+
+  res.status(200).json({ success: true, message: "Blood bank application rejected.", bloodBankId: Number(id) });
+}
+
+async function getAllDonors(req, res) {
+  const donors = await adminModel.getAllDonors();
+  res.status(200).json({ success: true, count: donors.length, donors });
 }
 
 async function getUnverifiedDonors(req, res) {
@@ -104,6 +131,8 @@ async function getSystemStats(req, res) {
 module.exports = {
   getUnverifiedBloodBanks,
   verifyBloodBank,
+  rejectBloodBank,
+  getAllDonors,
   getUnverifiedDonors,
   verifyDonor,
   getAllUsers,

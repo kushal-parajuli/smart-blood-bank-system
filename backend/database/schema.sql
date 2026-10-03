@@ -50,6 +50,8 @@ CREATE TABLE blood_banks (
     latitude DECIMAL(10, 8) NULL,
     longitude DECIMAL(11, 8) NULL,
     is_verified_by_admin BOOLEAN DEFAULT FALSE,
+    verification_status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+    rejection_reason TEXT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -83,7 +85,7 @@ CREATE TABLE donors (
     longitude DECIMAL(11, 8) NULL,
     last_donation_date DATE,
     is_available BOOLEAN DEFAULT TRUE,
-    is_verified_by_admin BOOLEAN DEFAULT FALSE,
+    is_verified_by_admin BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_blood_group_city (blood_group, city)

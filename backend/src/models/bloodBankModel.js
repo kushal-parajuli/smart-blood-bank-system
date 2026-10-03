@@ -57,7 +57,7 @@ async function findBloodBankById(id, conn = pool) {
   const [rows] = await conn.query(
     `SELECT bb.id, bb.bank_name, bb.license_number, bb.address, bb.city,
             bb.district, bb.province, bb.latitude, bb.longitude,
-            bb.is_verified_by_admin, bb.created_at,
+            bb.is_verified_by_admin, bb.verification_status, bb.rejection_reason, bb.created_at,
             u.id AS user_id, u.name AS contact_name, u.email, u.phone
      FROM blood_banks bb
      JOIN users u ON bb.user_id = u.id
@@ -81,15 +81,13 @@ async function findBloodBankByUserId(userId, conn = pool) {
 }
 
 /**
- * Lists every registered bank — used for the donor booking flow, where
- * someone needs to pick ANY bank to donate at (not filtered by stock,
- * unlike inventory search which requires a blood group). Unverified
- * banks are still included but flagged, so the frontend can show that
- * status rather than silently hiding them.
+ * Lists registered banks that are not rejected — used for the donor booking flow, where
+ * someone needs to pick a bank to donate at.
  */
 async function findAllBanks(conn = pool) {
   const [rows] = await conn.query(
-    `SELECT bb.id, bb.bank_name, bb.city, bb.district, bb.province, bb.latitude, bb.longitude, bb.is_verified_by_admin,
+    `SELECT bb.id, bb.bank_name, bb.city, bb.district, bb.province, bb.latitude, bb.longitude,
+            bb.is_verified_by_admin, bb.verification_status,
             (
               SELECT bbi.image_url FROM blood_bank_images bbi
               WHERE bbi.blood_bank_id = bb.id
@@ -102,6 +100,7 @@ async function findAllBanks(conn = pool) {
               LIMIT 1
             ) AS primary_image_url
      FROM blood_banks bb
+     WHERE bb.verification_status != 'rejected'
      ORDER BY bb.bank_name`
   );
   return rows;

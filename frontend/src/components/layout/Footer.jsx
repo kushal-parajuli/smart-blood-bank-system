@@ -10,7 +10,7 @@ export default function Footer() {
 
   return (
     <footer id="about" className="border-t border-[var(--border)] bg-slate-900 text-slate-300">
-      
+
       {/* Emergency Hotline Banner */}
       <div className="bg-red-950/70 border-b border-red-900/60 text-red-200 py-3.5 px-4">
         <div className="mx-auto max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm">
@@ -30,7 +30,7 @@ export default function Footer() {
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
-          
+
           {/* Brand & Purpose (2 cols) */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-2.5">
@@ -142,7 +142,8 @@ export default function Footer() {
             <span>Privacy Policy</span>
             <span>Terms of Use</span>
             <span className="flex items-center gap-1 text-slate-300">
-              Made with <Heart size={12} className="text-red-500 fill-red-500" /> for community health
+              <b>Made for community health BY: Kushal Parajuli </b>
+
             </span>
           </div>
         </div>

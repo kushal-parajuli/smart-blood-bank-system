@@ -10,27 +10,59 @@ const { pool } = require("../config/db");
 
 // --- Blood bank verification ---
 
-async function getUnverifiedBloodBanks() {
-  const [rows] = await pool.query(
-    `SELECT bb.id, bb.bank_name, bb.license_number, bb.city, bb.district, bb.province,
-            bb.created_at, u.name AS contact_name, u.email, u.phone
-     FROM blood_banks bb
-     JOIN users u ON bb.user_id = u.id
-     WHERE bb.is_verified_by_admin = FALSE
-     ORDER BY bb.created_at ASC`
-  );
+async function getUnverifiedBloodBanks(status = "pending") {
+  let query = `
+    SELECT bb.id, bb.bank_name, bb.license_number, bb.city, bb.district, bb.province,
+           bb.verification_status, bb.rejection_reason,
+           bb.created_at, u.name AS contact_name, u.email, u.phone
+    FROM blood_banks bb
+    JOIN users u ON bb.user_id = u.id
+  `;
+
+  if (status === "all") {
+    query += " WHERE bb.verification_status IN ('pending', 'rejected') OR bb.is_verified_by_admin = FALSE";
+  } else if (status === "rejected") {
+    query += " WHERE bb.verification_status = 'rejected'";
+  } else {
+    // Default: 'pending' awaiting administrator review
+    query += " WHERE bb.verification_status = 'pending' OR (bb.verification_status IS NULL AND bb.is_verified_by_admin = FALSE)";
+  }
+
+  query += " ORDER BY bb.created_at ASC";
+
+  const [rows] = await pool.query(query);
   return rows;
 }
 
 async function verifyBloodBank(id) {
   const [result] = await pool.query(
-    "UPDATE blood_banks SET is_verified_by_admin = TRUE WHERE id = ?",
+    "UPDATE blood_banks SET is_verified_by_admin = TRUE, verification_status = 'approved', rejection_reason = NULL WHERE id = ?",
     [id]
   );
   return result.affectedRows > 0;
 }
 
-// --- Donor verification ---
+async function rejectBloodBank(id, reason = null) {
+  const [result] = await pool.query(
+    "UPDATE blood_banks SET is_verified_by_admin = FALSE, verification_status = 'rejected', rejection_reason = ? WHERE id = ?",
+    [reason || null, id]
+  );
+  return result.affectedRows > 0;
+}
+
+// --- Donor directory & records ---
+
+async function getAllDonors() {
+  const [rows] = await pool.query(
+    `SELECT d.id, d.blood_group, d.city, d.district, d.province, d.created_at,
+            d.is_available, d.is_verified_by_admin,
+            u.id AS user_id, u.name, u.email, u.phone
+     FROM donors d
+     JOIN users u ON d.user_id = u.id
+     ORDER BY d.created_at DESC`
+  );
+  return rows;
+}
 
 async function getUnverifiedDonors() {
   const [rows] = await pool.query(
@@ -99,13 +131,15 @@ async function getSystemStats() {
 
   const [[bankStats]] = await pool.query(`
     SELECT COUNT(*) AS total_banks,
-           SUM(is_verified_by_admin = TRUE) AS verified_banks
+           SUM(verification_status = 'approved' OR (verification_status IS NULL AND is_verified_by_admin = TRUE)) AS verified_banks,
+           SUM(verification_status = 'pending' OR (verification_status IS NULL AND is_verified_by_admin = FALSE)) AS pending_banks,
+           SUM(verification_status = 'rejected') AS rejected_banks
     FROM blood_banks
   `);
 
   const [[donorStats]] = await pool.query(`
     SELECT COUNT(*) AS total_donors,
-           SUM(is_verified_by_admin = TRUE) AS verified_donors
+           COUNT(*) AS verified_donors
     FROM donors
   `);
 
@@ -133,6 +167,8 @@ async function getSystemStats() {
 module.exports = {
   getUnverifiedBloodBanks,
   verifyBloodBank,
+  rejectBloodBank,
+  getAllDonors,
   getUnverifiedDonors,
   verifyDonor,
   getAllUsers,

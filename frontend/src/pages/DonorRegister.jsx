@@ -154,9 +154,9 @@ export default function DonorRegister() {
               </span>
             </div>
             <div className="flex justify-between border-t border-[var(--border)] pt-2">
-              <span className="text-[var(--muted-foreground)]">Verification:</span>
-              <span className="font-medium text-emerald-700">
-                {existingProfile?.is_verified_by_admin ? "Admin Verified" : "Self-Registered"}
+              <span className="text-[var(--muted-foreground)]">Donor Status:</span>
+              <span className="font-semibold text-emerald-700 flex items-center gap-1">
+                <CheckCircle2 size={13} className="text-emerald-600" /> Active Voluntary Donor
               </span>
             </div>
           </div>

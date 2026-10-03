@@ -172,7 +172,7 @@ export default function Navbar() {
                 to="/admin/dashboard?tab=donors"
                 className={navLinkClass(isActive("/admin/dashboard", "tab=donors"))}
               >
-                <HeartHandshake size={15} /> Verify Donors
+                <HeartHandshake size={15} /> Registered Donors
               </Link>
 
               <Link
@@ -531,7 +531,7 @@ export default function Navbar() {
                           className={drawerLinkClass(isActive("/admin/dashboard", "tab=donors"))}
                         >
                           <span className="flex items-center gap-2.5">
-                            <HeartHandshake size={16} className="text-purple-400" /> Donor Verifications
+                            <HeartHandshake size={16} className="text-purple-400" /> Registered Donors
                           </span>
                           <ChevronRight size={15} className="text-[var(--muted-foreground)]" />
                         </Link>
