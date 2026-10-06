@@ -24,6 +24,7 @@ import { getMyInventory, addInventoryBatch } from "../../services/inventoryServi
 import { getBankIncomingRequests, updateRequestStatus } from "../../services/requestService";
 import { getFullImageUrl } from "../../utils/imageUrl";
 import BloodBankImageManager from "../../components/bloodbank/BloodBankImageManager";
+import EmergencyNoticeManager from "../../components/emergency/EmergencyNoticeManager";
 import { Button } from "../../components/ui/button";
 import { Card } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
@@ -67,6 +68,9 @@ export default function BankDashboard() {
       if (el) el.scrollIntoView({ behavior: "smooth" });
     } else if (section === "photos") {
       const el = document.getElementById("photos-section");
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    } else if (section === "emergency") {
+      const el = document.getElementById("emergency-section");
       if (el) el.scrollIntoView({ behavior: "smooth" });
     }
   }, [searchParams]);
@@ -228,6 +232,19 @@ export default function BankDashboard() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2 shrink-0 self-start sm:self-center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const el = document.getElementById("emergency-section");
+                if (el) el.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="gap-1.5 shadow-xs text-xs text-rose-300 border-rose-800/80 hover:bg-rose-950/40"
+            >
+              <Siren size={14} className="text-rose-400" />
+              <span>Emergency Notices</span>
+            </Button>
+
             <Button
               variant="outline"
               size="sm"
@@ -611,6 +628,11 @@ export default function BankDashboard() {
               )}
             </div>
           </Card>
+        </div>
+
+        {/* SECTION: EMERGENCY BLOOD NOTICES */}
+        <div id="emergency-section" className="space-y-4 pt-6 border-t border-[var(--border)]">
+          <EmergencyNoticeManager currentBank={profile} />
         </div>
 
         {/* SECTION 3: FACILITY LOCATION PHOTOS */}

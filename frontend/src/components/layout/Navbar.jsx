@@ -183,6 +183,13 @@ export default function Navbar() {
               </Link>
 
               <Link
+                to="/admin/dashboard?tab=emergency"
+                className={navLinkClass(isActive("/admin/dashboard", "tab=emergency"))}
+              >
+                <Siren size={15} className="text-rose-400" /> Emergency Notices
+              </Link>
+
+              <Link
                 to="/search"
                 className={navLinkClass(isActive("/search"))}
               >
@@ -213,6 +220,13 @@ export default function Navbar() {
                 className={navLinkClass(isActive("/bank/dashboard", "section=requests"))}
               >
                 <FileText size={15} /> Incoming Requests
+              </Link>
+
+              <Link
+                to="/bank/dashboard?section=emergency"
+                className={navLinkClass(isActive("/bank/dashboard", "section=emergency"))}
+              >
+                <Siren size={15} className="text-rose-400" /> Emergency Notices
               </Link>
 
               <Link
@@ -548,6 +562,17 @@ export default function Navbar() {
                         </Link>
 
                         <Link
+                          to="/admin/dashboard?tab=emergency"
+                          onClick={() => setMenuOpen(false)}
+                          className={drawerLinkClass(isActive("/admin/dashboard", "tab=emergency"))}
+                        >
+                          <span className="flex items-center gap-2.5">
+                            <Siren size={16} className="text-rose-400" /> Emergency Notices
+                          </span>
+                          <ChevronRight size={15} className="text-[var(--muted-foreground)]" />
+                        </Link>
+
+                        <Link
                           to="/search"
                           onClick={() => setMenuOpen(false)}
                           className={drawerLinkClass(isActive("/search"))}
@@ -592,6 +617,17 @@ export default function Navbar() {
                         >
                           <span className="flex items-center gap-2.5">
                             <FileText size={16} className="text-teal-400" /> Incoming Requisitions
+                          </span>
+                          <ChevronRight size={15} className="text-[var(--muted-foreground)]" />
+                        </Link>
+
+                        <Link
+                          to="/bank/dashboard?section=emergency"
+                          onClick={() => setMenuOpen(false)}
+                          className={drawerLinkClass(isActive("/bank/dashboard", "section=emergency"))}
+                        >
+                          <span className="flex items-center gap-2.5">
+                            <Siren size={16} className="text-rose-400" /> Emergency Notices
                           </span>
                           <ChevronRight size={15} className="text-[var(--muted-foreground)]" />
                         </Link>

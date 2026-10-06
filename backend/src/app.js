@@ -20,6 +20,7 @@ const appointmentRoutes = require("./routes/appointmentRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const donationRoutes = require("./routes/donationRoutes");
+const emergencyNoticeRoutes = require("./routes/emergencyNoticeRoutes");
 
 const errorHandler = require("./middlewares/errorHandler");
 
@@ -58,6 +59,9 @@ app.use("/api/notifications", notificationRoutes);
 
 // Donation history — donor's own record + eligibility guideline
 app.use("/api/donations", donationRoutes);
+
+// Emergency Blood Notices — global urgent shortage broadcast system
+app.use("/api/emergency-notices", emergencyNoticeRoutes);
 
 // AI First Aid proxy route intentionally NOT added yet —
 // AI integration is the last phase per project plan.

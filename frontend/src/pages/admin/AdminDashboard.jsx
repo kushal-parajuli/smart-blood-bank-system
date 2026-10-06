@@ -22,7 +22,8 @@ import {
   User,
   X,
   ShieldAlert,
-  Clock
+  Clock,
+  Siren,
 } from "lucide-react";
 import { 
   getSystemStats, 
@@ -34,6 +35,7 @@ import {
   suspendUser, 
   unsuspendUser 
 } from "../../services/adminService";
+import { listBloodBanks } from "../../services/bloodBankService";
 import PageHeader from "../../components/layout/PageHeader";
 import Section from "../../components/layout/Section";
 import { Card, CardContent } from "../../components/ui/card";
@@ -42,19 +44,20 @@ import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import { Alert } from "../../components/ui/alert";
 import AdminProfileTab from "./AdminProfileTab";
+import EmergencyNoticeManager from "../../components/emergency/EmergencyNoticeManager";
 
 export default function AdminDashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState(
-    initialTab && ["overview", "banks", "donors", "users", "profile"].includes(initialTab)
+    initialTab && ["overview", "banks", "donors", "users", "emergency", "profile"].includes(initialTab)
       ? initialTab
       : "overview"
   );
 
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab && ["overview", "banks", "donors", "users", "profile"].includes(tab)) {
+    if (tab && ["overview", "banks", "donors", "users", "emergency", "profile"].includes(tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -70,6 +73,7 @@ export default function AdminDashboard() {
   const [rejectedBanks, setRejectedBanks] = useState([]);
   const [allDonors, setAllDonors] = useState([]);
   const [userList, setUserList] = useState([]);
+  const [allBanks, setAllBanks] = useState([]);
   
   // Blood bank queue tab filter
   const [bankQueueFilter, setBankQueueFilter] = useState("pending"); // "pending" | "rejected"
@@ -87,12 +91,13 @@ export default function AdminDashboard() {
   const loadAllAdminData = useCallback(async () => {
     setLoading(true);
     try {
-      const [statsRes, pendingBanksRes, rejectedBanksRes, donorsRes, usersRes] = await Promise.all([
+      const [statsRes, pendingBanksRes, rejectedBanksRes, donorsRes, usersRes, banksRes] = await Promise.all([
         getSystemStats().catch(() => ({ stats: null })),
         getUnverifiedBloodBanks("pending").catch(() => ({ banks: [] })),
         getUnverifiedBloodBanks("rejected").catch(() => ({ banks: [] })),
         getAllDonors().catch(() => ({ donors: [] })),
         getAllUsers().catch(() => ({ users: [] })),
+        listBloodBanks().catch(() => ({ banks: [] })),
       ]);
 
       if (statsRes?.stats) setStats(statsRes.stats);
@@ -100,6 +105,7 @@ export default function AdminDashboard() {
       if (rejectedBanksRes?.banks) setRejectedBanks(rejectedBanksRes.banks);
       if (donorsRes?.donors) setAllDonors(donorsRes.donors);
       if (usersRes?.users) setUserList(usersRes.users);
+      if (banksRes?.banks) setAllBanks(banksRes.banks);
     } catch {
       setNotification({ type: "error", message: "Failed to load administration data. Please refresh." });
     } finally {
@@ -279,6 +285,18 @@ export default function AdminDashboard() {
               }`}
             >
               User &amp; Facility Directory
+            </button>
+
+            <button
+              onClick={() => handleTabChange("emergency")}
+              className={`px-4 py-3 text-sm font-semibold border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 ${
+                activeTab === "emergency"
+                  ? "border-rose-500 text-rose-400"
+                  : "border-transparent text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <Siren size={15} className="text-rose-400" />
+              Emergency Notices
             </button>
 
             <button
@@ -923,7 +941,15 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* TAB 5: Administrator Profile & Credentials */}
+        {/* TAB 5: Emergency Blood Shortage Management */}
+        {activeTab === "emergency" && (
+          <EmergencyNoticeManager
+            isAdmin={true}
+            bloodBanksList={allBanks}
+          />
+        )}
+
+        {/* TAB 6: Administrator Profile & Credentials */}
         {activeTab === "profile" && <AdminProfileTab />}
 
         {/* BLOOD BANK REJECTION MODAL */}
